@@ -9,49 +9,62 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04  # Using Ubuntu 20.04 for better compatibility
 
     steps:
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '6.2.4'
-          host: 'linux'
-          target: 'desktop'
-          arch: 'gcc_64'
-          dir: '${{ github.workspace }}/qt/'
-          install-deps: 'true'
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.2.4'
+        host: 'linux'
+        target: 'desktop'
+        arch: 'gcc_64'
+        dir: '${{ github.workspace }}/qt/'
+        install-deps: 'true'
 
-      - name: Install additional dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev
+    - name: Install additional dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libgl1-mesa-dev
 
-      - name: Create Build Environment
-        run: cmake -E make_directory ${{github.workspace}}/build
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{github.workspace}}/build
 
-      - name: Configure CMake
-        shell: bash
-        working-directory: ${{github.workspace}}/build
-        run: cmake $GITHUB_WORKSPACE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/qt/6.2.4/gcc_64
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{github.workspace}}/build
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/qt/6.2.4/gcc_64
 
-      - name: Build
-        working-directory: ${{github.workspace}}/build
-        shell: bash
-        run: cmake --build . --config Release
+    - name: Build
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: cmake --build . --config Release
 
-      - name: Create AppImage
-        working-directory: ${{github.workspace}}/build
-        run: |
-          sudo apt-get install -y libfuse2
-          wget -c -nv "https://github.com/probonopd/linuxdeployqt/releases/download/continuous/linuxdeployqt-continuous-x86_64.AppImage"
-          chmod a+x linuxdeployqt-continuous-x86_64.AppImage
-          ./linuxdeployqt-continuous-x86_64.AppImage LaTeXEditor -appimage
+    - name: Create deployment directory
+      run: |
+        mkdir -p ${{github.workspace}}/deploy/lib
+        cp ${{github.workspace}}/build/LaTeXEditor ${{github.workspace}}/deploy/
+        cp $GITHUB_WORKSPACE/qt/6.2.4/gcc_64/lib/libQt6Core.so.6 ${{github.workspace}}/deploy/lib/
+        cp $GITHUB_WORKSPACE/qt/6.2.4/gcc_64/lib/libQt6Gui.so.6 ${{github.workspace}}/deploy/lib/
+        cp $GITHUB_WORKSPACE/qt/6.2.4/gcc_64/lib/libQt6Widgets.so.6 ${{github.workspace}}/deploy/lib/
+        cp -r $GITHUB_WORKSPACE/qt/6.2.4/gcc_64/plugins ${{github.workspace}}/deploy/
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: LaTeXEditor-linux-latest
-          path: ${{github.workspace}}/build/LaTeXEditor*.AppImage
+    - name: Create launch script
+      run: |
+        echo '#!/bin/bash' > ${{github.workspace}}/deploy/run_LaTeXEditor.sh
+        echo 'DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"' >> ${{github.workspace}}/deploy/run_LaTeXEditor.sh
+        echo 'export LD_LIBRARY_PATH="$DIR/lib:$LD_LIBRARY_PATH"' >> ${{github.workspace}}/deploy/run_LaTeXEditor.sh
+        echo 'export QT_PLUGIN_PATH="$DIR/plugins"' >> ${{github.workspace}}/deploy/run_LaTeXEditor.sh
+        echo '"$DIR/LaTeXEditor"' >> ${{github.workspace}}/deploy/run_LaTeXEditor.sh
+        chmod +x ${{github.workspace}}/deploy/run_LaTeXEditor.sh
+
+    - name: Create tarball
+      run: tar -czvf LaTeXEditor-linux.tar.gz -C ${{github.workspace}}/deploy .
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: LaTeXEditor-linux-latest
+        path: ${{github.workspace}}/LaTeXEditor-linux.tar.gz
