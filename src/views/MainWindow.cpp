@@ -67,7 +67,7 @@ void MainWindow::createActions() {
         connect(themeAct, &QAction::triggered, this, &MainWindow::changeTheme);
     }
 }
-
+//
 void MainWindow::createMenus() {
     fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(newAct);
