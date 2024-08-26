@@ -9,7 +9,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04  # Using Ubuntu 20.04 for better compatibility
+    runs-on: ubuntu-20.04
 
     steps:
     - uses: actions/checkout@v2
@@ -35,7 +35,9 @@ jobs:
     - name: Configure CMake
       shell: bash
       working-directory: ${{github.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/qt/6.2.4/gcc_64
+      run: |
+        export Qt6_DIR=${{ github.workspace }}/qt/6.2.4/gcc_64/lib/cmake/Qt6
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release
 
     - name: Build
       working-directory: ${{github.workspace}}/build
@@ -46,10 +48,10 @@ jobs:
       run: |
         mkdir -p ${{github.workspace}}/deploy/lib
         cp ${{github.workspace}}/build/LaTeXEditor ${{github.workspace}}/deploy/
-        cp $GITHUB_WORKSPACE/qt/6.2.4/gcc_64/lib/libQt6Core.so.6 ${{github.workspace}}/deploy/lib/
-        cp $GITHUB_WORKSPACE/qt/6.2.4/gcc_64/lib/libQt6Gui.so.6 ${{github.workspace}}/deploy/lib/
-        cp $GITHUB_WORKSPACE/qt/6.2.4/gcc_64/lib/libQt6Widgets.so.6 ${{github.workspace}}/deploy/lib/
-        cp -r $GITHUB_WORKSPACE/qt/6.2.4/gcc_64/plugins ${{github.workspace}}/deploy/
+        cp ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Core.so.6 ${{github.workspace}}/deploy/lib/
+        cp ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Gui.so.6 ${{github.workspace}}/deploy/lib/
+        cp ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Widgets.so.6 ${{github.workspace}}/deploy/lib/
+        cp -r ${{ github.workspace }}/qt/6.2.4/gcc_64/plugins ${{github.workspace}}/deploy/
 
     - name: Create launch script
       run: |
