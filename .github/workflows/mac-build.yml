@@ -37,10 +37,28 @@ jobs:
       shell: bash
       run: cmake --build . --config Release
 
+    - name: Locate macdeployqt
+      run: |
+        MACDEPLOYQT_PATH=$(find ${{ github.workspace }}/qt -name macdeployqt -type f)
+        echo "MACDEPLOYQT_PATH=$MACDEPLOYQT_PATH" >> $GITHUB_ENV
+        echo "Found macdeployqt at: $MACDEPLOYQT_PATH"
+
+    - name: Verify macdeployqt
+      run: |
+        if [ -z "$MACDEPLOYQT_PATH" ]; then
+          echo "macdeployqt not found"
+          exit 1
+        fi
+        if [ ! -x "$MACDEPLOYQT_PATH" ]; then
+          echo "macdeployqt is not executable"
+          exit 1
+        fi
+        echo "macdeployqt is valid and executable"
+
     - name: Deploy Qt
       working-directory: ${{github.workspace}}/build
       run: |
-        ${{ github.workspace }}/qt/6.2.4/macos/bin/macdeployqt LaTeXEditor.app -dmg
+        "$MACDEPLOYQT_PATH" LaTeXEditor.app -dmg
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
