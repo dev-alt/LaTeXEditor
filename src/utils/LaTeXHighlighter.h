@@ -4,7 +4,7 @@
 #include <QSyntaxHighlighter>
 #include <QTextCharFormat>
 #include <QRegularExpression>
-#include "models/Theme.h"
+#include "../models/Theme.h"
 
 class LaTeXHighlighter : public QSyntaxHighlighter
 {
