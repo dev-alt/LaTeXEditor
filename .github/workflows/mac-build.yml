@@ -30,7 +30,9 @@ jobs:
     - name: Configure CMake
       shell: bash
       working-directory: ${{github.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/qt/6.2.4/macos -DCMAKE_BUILD_TYPE=Release
+      run: |
+        export Qt6_DIR=${{ github.workspace }}/qt/6.2.4/macos/lib/cmake/Qt6
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release
 
     - name: Build
       working-directory: ${{github.workspace}}/build
