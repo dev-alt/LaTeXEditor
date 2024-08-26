@@ -47,6 +47,11 @@ jobs:
       shell: bash
       run: cmake --build . --config Release
 
+    - name: List build directory
+      run: |
+        echo "Build directory contents:"
+        ls -R ${{github.workspace}}/build
+
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
