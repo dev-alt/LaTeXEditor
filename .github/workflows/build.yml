@@ -11,7 +11,7 @@ jobs:
   build:
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [windows-latest]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -21,9 +21,9 @@ jobs:
       uses: jurplel/install-qt-action@v3
       with:
         version: '6.2.4'
-        host: ${{ runner.os == 'Windows' && 'windows' || runner.os == 'macOS' && 'mac' || 'linux' }}
+        host: 'windows'
         target: 'desktop'
-        arch: ${{ runner.os == 'Windows' && 'win64_msvc2019_64' || runner.os == 'macOS' && 'clang_64' || 'gcc_64' }}
+        arch: 'win64_msvc2019_64'
         dir: '${{ github.workspace }}/qt/'
         install-deps: 'true'
 
@@ -33,27 +33,20 @@ jobs:
     - name: Configure CMake
       shell: bash
       working-directory: ${{github.workspace}}/build
-      run: |
-        if [ "${{ runner.os }}" == "Windows" ]; then
-          cmake $GITHUB_WORKSPACE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/qt/6.2.4/msvc2019_64
-        elif [ "${{ runner.os }}" == "macOS" ]; then
-          cmake $GITHUB_WORKSPACE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/qt/6.2.4/macos
-        else
-          cmake $GITHUB_WORKSPACE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/qt/6.2.4/gcc_64
-        fi
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/qt/6.2.4/msvc2019_64
 
     - name: Build
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: cmake --build . --config Release
 
-    - name: List build directory
-      run: |
-        echo "Build directory contents:"
-        ls -R ${{github.workspace}}/build
+    - name: List Release Directory Contents
+      working-directory: ${{github.workspace}}/build/Release
+      shell: bash
+      run: ls -la
 
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
-        name: LaTeXEditor-${{ matrix.os }}
-        path: ${{github.workspace}}/build/LaTeXEditor*
+        name: LaTeXEditor-windows-latest
+        path: ${{github.workspace}}/build/Release/LaTeXEditor.exe
