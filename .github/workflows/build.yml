@@ -5,42 +5,51 @@ on:
     branches: [ main ]
   pull_request:
     branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
-      - name: Install Qt
-        uses: jurplel/install-qt-action@v3
-        with:
-          version: '6.2.4'
-          host: 'linux'
-          target: 'desktop'
-          arch: 'gcc_64'
-          dir: '${{ github.workspace }}/qt/'
-          install-deps: 'true'
+    - name: Install Qt
+      uses: jurplel/install-qt-action@v3
+      with:
+        version: '6.2.4'
+        host: 'windows'
+        target: 'desktop'
+        arch: 'win64_msvc2019_64'
+        dir: '${{ github.workspace }}/qt/'
+        install-deps: 'true'
 
-      - name: Create Build Environment
-        run: cmake -E make_directory ${{github.workspace}}/build
+    - name: Create Build Environment
+      run: cmake -E make_directory ${{github.workspace}}/build
 
-      - name: Configure CMake
-        shell: bash
-        working-directory: ${{github.workspace}}/build
-        run: cmake $GITHUB_WORKSPACE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/qt/6.2.4/gcc_64
+    - name: Configure CMake
+      shell: bash
+      working-directory: ${{github.workspace}}/build
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/qt/6.2.4/msvc2019_64
 
-      - name: Build
-        working-directory: ${{github.workspace}}/build
-        shell: bash
-        run: cmake --build . --config Release
+    - name: Build
+      working-directory: ${{github.workspace}}/build
+      shell: bash
+      run: cmake --build . --config Release
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v2
-        with:
-          name: LaTeXEditor-${{ matrix.os }}
-          path: ${{github.workspace}}/build/LaTeXEditor*
+    - name: Deploy Qt
+      working-directory: ${{github.workspace}}/build/Release
+      run: |
+        $ENV:PATH += ";${{ github.workspace }}/qt/6.2.4/msvc2019_64/bin"
+        windeployqt.exe LaTeXEditor.exe
+
+    - name: List Release Directory Contents
+      working-directory: ${{github.workspace}}/build/Release
+      shell: bash
+      run: ls -la
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: LaTeXEditor-windows-latest
+        path: ${{github.workspace}}/build/Release
