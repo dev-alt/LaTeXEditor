@@ -28,7 +28,7 @@ LaTeX Editor is a powerful, user-friendly desktop application designed to stream
 
 1. Clone the repository:
    ```
-   git clone https://github.com/yourusername/latex-editor.git
+   git clone https://github.com/dev-alt/latex-editor.git
    cd latex-editor
    ```
 
