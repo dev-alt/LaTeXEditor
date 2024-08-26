@@ -14,13 +14,17 @@ find_package(Qt6 COMPONENTS Widgets REQUIRED)
 
 include_directories(${CMAKE_SOURCE_DIR}/src)
 
-add_executable(LaTeXEditor
+set(SOURCES
         src/main.cpp
         src/models/DocumentModel.cpp
+        src/models/Theme.cpp
         src/views/MainWindow.cpp
         src/controllers/EditorController.cpp
-        src/LaTeXHighlighter.cpp
+        src/utils/LaTeXHighlighter.cpp
+        src/utils/ThemeManager.cpp
         resources.qrc
 )
+
+add_executable(LaTeXEditor ${SOURCES})
 
 target_link_libraries(LaTeXEditor PRIVATE Qt6::Widgets)

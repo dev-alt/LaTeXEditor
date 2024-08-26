@@ -1,39 +1,59 @@
 #include "LaTeXHighlighter.h"
+#include "ThemeManager.h"
+#include <QRegularExpression>
 
 LaTeXHighlighter::LaTeXHighlighter(QTextDocument *parent)
         : QSyntaxHighlighter(parent)
 {
+    setupHighlightingRules();
+}
+
+void LaTeXHighlighter::setupHighlightingRules()
+{
+    highlightingRules.clear();
+
     HighlightingRule rule;
 
     // LaTeX commands
-    commandFormat.setForeground(QColor(0, 0, 255));  // Blue
-    commandFormat.setFontWeight(QFont::Bold);
     rule.pattern = QRegularExpression(R"(\\[a-zA-Z]+)");
-    rule.format = commandFormat;
     highlightingRules.append(rule);
 
     // LaTeX environments
-    keywordFormat.setForeground(QColor(128, 0, 128));  // Purple
-    keywordFormat.setFontWeight(QFont::Bold);
     rule.pattern = QRegularExpression(R"(\\begin\{.*\}|\\end\{.*\})");
-    rule.format = keywordFormat;
     highlightingRules.append(rule);
 
     // Brackets
-    bracketFormat.setForeground(QColor(0, 128, 0));  // Green
     rule.pattern = QRegularExpression(R"([\{\}\[\]])");
-    rule.format = bracketFormat;
     highlightingRules.append(rule);
 
     // Comments
-    commentFormat.setForeground(QColor(128, 128, 128));  // Gray
     rule.pattern = QRegularExpression(R"(%[^\n]*)");
-    rule.format = commentFormat;
     highlightingRules.append(rule);
+
+    // Apply initial theme
+    updateTheme(ThemeManager::getInstance().getCurrentTheme());
 }
+
+void LaTeXHighlighter::updateTheme(const Theme &theme)
+{
+    if (highlightingRules.size() >= 4) {
+        highlightingRules[0].format.setForeground(theme.commandColor);
+        highlightingRules[0].format.setFontWeight(QFont::Bold);
+
+        highlightingRules[1].format.setForeground(theme.environmentColor);
+        highlightingRules[1].format.setFontWeight(QFont::Bold);
+
+        highlightingRules[2].format.setForeground(theme.bracketColor);
+
+        highlightingRules[3].format.setForeground(theme.commentColor);
+    }
+
+    rehighlight();
+}
+
 void LaTeXHighlighter::highlightBlock(const QString &text)
 {
-    for (const HighlightingRule &rule : qAsConst(highlightingRules)) {
+    for (const HighlightingRule &rule : std::as_const(highlightingRules)) {
         QRegularExpressionMatchIterator matchIterator = rule.pattern.globalMatch(text);
         while (matchIterator.hasNext()) {
             QRegularExpressionMatch match = matchIterator.next();

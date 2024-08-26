@@ -96,5 +96,6 @@ out/
 libs/
 extern/
 
+testFiles/
 # Custom
 # Add any project-specific files or directories you want to ignore

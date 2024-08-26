@@ -4,6 +4,7 @@
 #include <QSyntaxHighlighter>
 #include <QTextCharFormat>
 #include <QRegularExpression>
+#include "models/Theme.h"
 
 class LaTeXHighlighter : public QSyntaxHighlighter
 {
@@ -11,6 +12,7 @@ Q_OBJECT
 
 public:
     LaTeXHighlighter(QTextDocument *parent = nullptr);
+    void updateTheme(const Theme &theme);
 
 protected:
     void highlightBlock(const QString &text) override;
@@ -23,10 +25,7 @@ private:
     };
     QVector<HighlightingRule> highlightingRules;
 
-    QTextCharFormat keywordFormat;
-    QTextCharFormat commandFormat;
-    QTextCharFormat bracketFormat;
-    QTextCharFormat commentFormat;
+    void setupHighlightingRules();
 };
 
 #endif // LATEXHIGHLIGHTER_H

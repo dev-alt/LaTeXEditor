@@ -3,16 +3,13 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QTextStream>
+#include <QIcon>
+#include <QActionGroup>
+#include "../utils/ThemeManager.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     m_editor = new QPlainTextEdit(this);
     setCentralWidget(m_editor);
-
-    // Set light mode for the editor
-    QPalette editorPalette = m_editor->palette();
-    editorPalette.setColor(QPalette::Base, Qt::white);
-    editorPalette.setColor(QPalette::Text, Qt::black);
-    m_editor->setPalette(editorPalette);
 
     m_highlighter = new LaTeXHighlighter(m_editor->document());
 
@@ -26,6 +23,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     QIcon icon(":/icons/latex_editor_icon.png");
     setWindowIcon(icon);
 }
+
 QPlainTextEdit* MainWindow::getEditor() const {
     return m_editor;
 }
@@ -50,6 +48,14 @@ void MainWindow::createActions() {
     exitAct->setShortcuts(QKeySequence::Quit);
     exitAct->setStatusTip(tr("Exit the application"));
     connect(exitAct, &QAction::triggered, this, &QWidget::close);
+
+    themeActGroup = new QActionGroup(this);
+    for (const QString &themeName : ThemeManager::getInstance().getThemeNames()) {
+        QAction *themeAct = new QAction(themeName, this);
+        themeAct->setCheckable(true);
+        themeActGroup->addAction(themeAct);
+        connect(themeAct, &QAction::triggered, this, &MainWindow::changeTheme);
+    }
 }
 
 void MainWindow::createMenus() {
@@ -59,6 +65,11 @@ void MainWindow::createMenus() {
     fileMenu->addAction(saveAct);
     fileMenu->addSeparator();
     fileMenu->addAction(exitAct);
+
+    viewMenu = menuBar()->addMenu(tr("&View"));
+    for (QAction *action : themeActGroup->actions()) {
+        viewMenu->addAction(action);
+    }
 }
 
 void MainWindow::newFile() {
@@ -106,4 +117,28 @@ void MainWindow::saveFile() {
         file.close();
         setWindowTitle(fileName + " - LaTeX Editor");
     }
+}
+
+void MainWindow::changeTheme() {
+    QAction *themeAct = qobject_cast<QAction*>(sender());
+    if (themeAct) {
+        emit themeChangeRequested(themeAct->text());
+    }
+}
+
+void MainWindow::updateTheme(const Theme &newTheme) {
+    // Update highlighter colors
+    m_highlighter->updateTheme(newTheme);
+
+    // Update editor colors
+    QPalette editorPalette = m_editor->palette();
+    editorPalette.setColor(QPalette::Base, newTheme.baseColor);
+    editorPalette.setColor(QPalette::Text, newTheme.textColor);
+    m_editor->setPalette(editorPalette);
+
+    // Update main window colors
+    QPalette windowPalette = palette();
+    windowPalette.setColor(QPalette::Window, newTheme.windowColor);
+    windowPalette.setColor(QPalette::WindowText, newTheme.textColor);
+    setPalette(windowPalette);
 }
