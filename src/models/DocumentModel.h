@@ -5,7 +5,7 @@
 #include <QObject>
 
 class DocumentModel : public QObject {
-    Q_OBJECT
+Q_OBJECT
 
 public:
     explicit DocumentModel(QObject *parent = nullptr);
@@ -13,8 +13,8 @@ public:
     QString getContent() const;
     void setContent(const QString &content);
 
-    signals:
-            void contentChanged();
+signals:
+    void contentChanged();
 
 private:
     QString m_content;

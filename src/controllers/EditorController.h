@@ -2,17 +2,17 @@
 #define EDITORCONTROLLER_H
 
 #include <QObject>
-#include "../models/DocumentModel.h"
-#include "../views/MainWindow.h"
+#include "models/DocumentModel.h"
+#include "views/MainWindow.h"
 
 class EditorController : public QObject {
-    Q_OBJECT
+Q_OBJECT
 
 public:
     explicit EditorController(DocumentModel *model, MainWindow *view, QObject *parent = nullptr);
 
 private slots:
-            void onEditorTextChanged();
+    void onEditorTextChanged();
     void onModelContentChanged();
 
 private:
