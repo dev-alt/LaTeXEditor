@@ -8,6 +8,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     m_editor = new QPlainTextEdit(this);
     setCentralWidget(m_editor);
 
+    // Set light mode for the editor
+    QPalette editorPalette = m_editor->palette();
+    editorPalette.setColor(QPalette::Base, Qt::white);
+    editorPalette.setColor(QPalette::Text, Qt::black);
+    m_editor->setPalette(editorPalette);
+
     m_highlighter = new LaTeXHighlighter(m_editor->document());
 
     createActions();
@@ -16,10 +22,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     resize(800, 600);
     setWindowTitle("LaTeX Editor");
 
+    // Set the window icon
     QIcon icon(":/icons/latex_editor_icon.png");
     setWindowIcon(icon);
 }
-
 QPlainTextEdit* MainWindow::getEditor() const {
     return m_editor;
 }
