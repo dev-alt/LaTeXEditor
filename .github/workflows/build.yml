@@ -9,10 +9,7 @@ on:
 
 jobs:
   build:
-    strategy:
-      matrix:
-        os: [windows-latest]
-    runs-on: ${{ matrix.os }}
+    runs-on: windows-latest
 
     steps:
     - uses: actions/checkout@v2
@@ -40,6 +37,12 @@ jobs:
       shell: bash
       run: cmake --build . --config Release
 
+    - name: Deploy Qt
+      working-directory: ${{github.workspace}}/build/Release
+      run: |
+        $ENV:PATH += ";${{ github.workspace }}/qt/6.2.4/msvc2019_64/bin"
+        windeployqt.exe LaTeXEditor.exe
+
     - name: List Release Directory Contents
       working-directory: ${{github.workspace}}/build/Release
       shell: bash
@@ -49,4 +52,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: LaTeXEditor-windows-latest
-        path: ${{github.workspace}}/build/Release/LaTeXEditor.exe
+        path: ${{github.workspace}}/build/Release
