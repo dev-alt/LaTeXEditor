@@ -1,5 +1,4 @@
 #include "ThemeManager.h"
-#include <QApplication>
 
 ThemeManager& ThemeManager::getInstance() {
     static ThemeManager instance;
@@ -44,8 +43,6 @@ void ThemeManager::applyTheme(const QString &themeName) {
     for (int i = 0; i < m_themes.size(); ++i) {
         if (m_themes[i].name == themeName) {
             m_currentThemeIndex = i;
-            QPalette palette = createPaletteFromTheme(m_themes[i]);
-            qApp->setPalette(palette);
             emit themeChanged(m_themes[i]);
             return;
         }
@@ -66,22 +63,4 @@ QStringList ThemeManager::getThemeNames() const {
 
 const Theme& ThemeManager::getCurrentTheme() const {
     return m_themes[m_currentThemeIndex];
-}
-
-QPalette ThemeManager::createPaletteFromTheme(const Theme &theme) {
-    QPalette palette;
-    palette.setColor(QPalette::Window, theme.windowColor);
-    palette.setColor(QPalette::WindowText, theme.textColor);
-    palette.setColor(QPalette::Base, theme.baseColor);
-    palette.setColor(QPalette::AlternateBase, theme.alternateBaseColor);
-    palette.setColor(QPalette::ToolTipBase, theme.baseColor);
-    palette.setColor(QPalette::ToolTipText, theme.textColor);
-    palette.setColor(QPalette::Text, theme.textColor);
-    palette.setColor(QPalette::Button, theme.windowColor);
-    palette.setColor(QPalette::ButtonText, theme.textColor);
-    palette.setColor(QPalette::BrightText, Qt::red);
-    palette.setColor(QPalette::Link, theme.highlightColor);
-    palette.setColor(QPalette::Highlight, theme.highlightColor);
-    palette.setColor(QPalette::HighlightedText, theme.highlightedTextColor);
-    return palette;
 }

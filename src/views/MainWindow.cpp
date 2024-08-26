@@ -5,6 +5,7 @@
 #include <QTextStream>
 #include <QIcon>
 #include <QActionGroup>
+#include <QStatusBar>
 #include "../utils/ThemeManager.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
@@ -22,7 +23,16 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
     // Set the window icon
     QIcon icon(":/icons/latex_editor_icon.png");
     setWindowIcon(icon);
+
+    // Apply initial theme
+    ThemeManager& themeManager = ThemeManager::getInstance();
+    const Theme& initialTheme = themeManager.getCurrentTheme();
+    updateTheme(initialTheme);
+
+    // Connect theme change signal
+    connect(&themeManager, &ThemeManager::themeChanged, this, &MainWindow::updateTheme);
 }
+
 
 QPlainTextEdit* MainWindow::getEditor() const {
     return m_editor;
@@ -141,4 +151,36 @@ void MainWindow::updateTheme(const Theme &newTheme) {
     windowPalette.setColor(QPalette::Window, newTheme.windowColor);
     windowPalette.setColor(QPalette::WindowText, newTheme.textColor);
     setPalette(windowPalette);
+
+    // Set a specific style for the menu bar to ensure readability
+    QString menuBarStyle = QString(
+            "QMenuBar { background-color: %1; color: %2; }"
+            "QMenuBar::item { background-color: transparent; }"
+            "QMenuBar::item:selected { background-color: %3; color: %4; }"
+    ).arg(newTheme.windowColor.name())
+            .arg(newTheme.textColor.name())
+            .arg(newTheme.highlightColor.name())
+            .arg(newTheme.highlightedTextColor.name());
+
+    menuBar()->setStyleSheet(menuBarStyle);
+
+    // Set a style for dropdown menus
+    QString menuStyle = QString(
+            "QMenu { background-color: %1; color: %2; }"
+            "QMenu::item:selected { background-color: %3; color: %4; }"
+    ).arg(newTheme.windowColor.name())
+            .arg(newTheme.textColor.name())
+            .arg(newTheme.highlightColor.name())
+            .arg(newTheme.highlightedTextColor.name());
+
+    fileMenu->setStyleSheet(menuStyle);
+    viewMenu->setStyleSheet(menuStyle);
+
+    // Update status bar if you have one
+    if (statusBar()) {
+        statusBar()->setPalette(windowPalette);
+    }
+
+    // Force an update of the UI
+    update();
 }

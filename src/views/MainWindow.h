@@ -36,7 +36,7 @@ private:
     void createMenus();
 
     QMenu *fileMenu;
-    QMenu *viewMenu;
+    QMenu *viewMenu;  // Make sure this is declared
     QAction *newAct;
     QAction *openAct;
     QAction *saveAct;

@@ -3,7 +3,6 @@
 
 #include <QObject>
 #include <QVector>
-#include <QPalette>
 #include "../models/Theme.h"
 
 class ThemeManager : public QObject {
@@ -26,7 +25,6 @@ private:
     int m_currentThemeIndex;
 
     void initializeDefaultThemes();
-    QPalette createPaletteFromTheme(const Theme &theme);
 };
 
 #endif // THEMEMANAGER_H
