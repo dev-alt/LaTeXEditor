@@ -29,6 +29,10 @@ jobs:
         sudo apt-get update
         sudo apt-get install -y libgl1-mesa-dev
 
+    - name: List Qt installation directory
+      run: |
+        ls -R ${{ github.workspace }}/qt/
+
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
 
@@ -37,20 +41,23 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: |
         export Qt6_DIR=${{ github.workspace }}/qt/6.2.4/gcc_64/lib/cmake/Qt6
-        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${{ github.workspace }}/qt/6.2.4/gcc_64
 
     - name: Build
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: cmake --build . --config Release
 
+    - name: List build directory
+      run: ls -R ${{github.workspace}}/build
+
     - name: Create deployment directory
       run: |
         mkdir -p ${{github.workspace}}/deploy/lib
         cp ${{github.workspace}}/build/LaTeXEditor ${{github.workspace}}/deploy/
-        cp ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Core.so.6 ${{github.workspace}}/deploy/lib/
-        cp ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Gui.so.6 ${{github.workspace}}/deploy/lib/
-        cp ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Widgets.so.6 ${{github.workspace}}/deploy/lib/
+        cp -L ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Core.so* ${{github.workspace}}/deploy/lib/
+        cp -L ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Gui.so* ${{github.workspace}}/deploy/lib/
+        cp -L ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Widgets.so* ${{github.workspace}}/deploy/lib/
         cp -r ${{ github.workspace }}/qt/6.2.4/gcc_64/plugins ${{github.workspace}}/deploy/
 
     - name: Create launch script
