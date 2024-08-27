@@ -8,6 +8,9 @@
 #include <QStatusBar>
 #include "../controllers/FileController.h"
 #include "../models/DocumentModel.h"
+#include "../controllers/LatexToolbarController.h"
+#include "../utils/LaTeXHighlighter.h"
+#include "../utils/ThemeManager.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nullptr) {
     qDebug() << "MainWindow constructor started";
@@ -45,6 +48,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
     createMenus();
     qDebug() << "Menus created";
 
+    // Initialize and add LatexToolbar
+    m_latexToolbar = new LatexToolbar(this);
+    addToolBar(m_latexToolbar);
+    qDebug() << "LatexToolbar created and added";
+
+    // Initialize LatexToolbarController
+    m_latexToolbarController = new LatexToolbarController(m_latexToolbar, m_documentModel, this);
+    qDebug() << "LatexToolbarController created";
+
     resize(800, 600);
     setWindowTitle("LaTeX Editor");
     qDebug() << "Window properties set";
@@ -59,7 +71,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
         qDebug() << "updateTheme called";
 
         // Connect theme change signal
-        connect(&themeManager, SIGNAL(themeChanged(const Theme&)), this, SLOT(updateTheme(const Theme&)));
+        connect(&themeManager, &ThemeManager::themeChanged, this, &MainWindow::updateTheme);
         qDebug() << "Theme change signal connected";
     } catch (const std::exception& e) {
         qDebug() << "Exception caught while applying theme:" << e.what();
@@ -127,7 +139,7 @@ void MainWindow::createActions() {
 
 void MainWindow::removeRTLOverride() {
     QString text = m_editor->toPlainText();
-    text.remove(QChar(0x202E)); // Remove RTL override character
+    text.remove(QChar(0x202E));
     m_editor->setPlainText(text);
 }
 

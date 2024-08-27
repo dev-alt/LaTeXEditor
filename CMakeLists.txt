@@ -25,8 +25,10 @@ set(SOURCE_FILES
         src/models/DocumentModel.cpp
         src/models/Theme.cpp
         src/views/MainWindow.cpp
+        src/views/LatexToolbar.cpp
         src/controllers/EditorController.cpp
         src/controllers/FileController.cpp
+        src/controllers/LatexToolbarController.cpp
         src/utils/LaTeXHighlighter.cpp
         src/utils/ThemeManager.cpp
         resources.qrc

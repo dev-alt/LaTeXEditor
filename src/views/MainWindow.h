@@ -9,6 +9,8 @@
 #include <QActionGroup>
 #include "../utils/LaTeXHighlighter.h"
 #include "../utils/ThemeManager.h"
+#include "LatexToolbar.h"
+#include "../controllers/LatexToolbarController.h"
 
 class DocumentModel;
 
@@ -43,6 +45,8 @@ private:
     LaTeXHighlighter *m_highlighter;
     DocumentModel *m_documentModel;
     FileController *m_fileController;
+    LatexToolbar *m_latexToolbar;
+    LatexToolbarController *m_latexToolbarController;
 
     QMenu *fileMenu;
     QMenu *viewMenu;
