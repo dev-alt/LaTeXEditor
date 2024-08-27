@@ -37,30 +37,17 @@ jobs:
       working-directory: ${{github.workspace}}/build
       run: |
         export Qt6_DIR=${{ github.workspace }}/qt/6.2.4/macos/lib/cmake/Qt6
-        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=x86_64
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release
 
     - name: Build
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: cmake --build . --config Release -- -j1
 
-    - name: Import Code-Signing Certificates
-      env:
-        APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
-        APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
-        KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
-      run: |
-        echo $APPLE_CERTIFICATE | base64 --decode > certificate.p12
-        security create-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-        security default-keychain -s build.keychain
-        security unlock-keychain -p "$KEYCHAIN_PASSWORD" build.keychain
-        security import certificate.p12 -k build.keychain -P "$APPLE_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
-        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" build.keychain
-
-    - name: Sign the Application
+    - name: Ad-hoc Signing
       working-directory: ${{github.workspace}}/build
       run: |
-        codesign --force --options runtime --sign "Developer ID Application: Your Name (XXXXXXXXXX)" LaTeXEditor.app
+        codesign --force --deep --sign - LaTeXEditor.app
 
     - name: Create DMG
       working-directory: ${{github.workspace}}/build
