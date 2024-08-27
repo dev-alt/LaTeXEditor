@@ -6,6 +6,8 @@
 #include <QIcon>
 #include <QActionGroup>
 #include <QStatusBar>
+#include "../controllers/FileController.h"
+#include "../models/DocumentModel.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nullptr) {
     qDebug() << "MainWindow constructor started";
@@ -26,6 +28,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
     // Initialize highlighter
     m_highlighter = new LaTeXHighlighter(m_editor->document());
     qDebug() << "Highlighter created";
+
+    // Initialize DocumentModel
+    m_documentModel = new DocumentModel(this);
+    qDebug() << "DocumentModel created";
+
+    // Initialize FileController
+    m_fileController = new FileController(m_documentModel, this, this);
+    qDebug() << "FileController created";
 
     qDebug() << "About to call createActions";
     createActions();
@@ -49,7 +59,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
         qDebug() << "updateTheme called";
 
         // Connect theme change signal
-        connect(&themeManager, &ThemeManager::themeChanged, this, &MainWindow::updateTheme);
+        connect(&themeManager, SIGNAL(themeChanged(const Theme&)), this, SLOT(updateTheme(const Theme&)));
         qDebug() << "Theme change signal connected";
     } catch (const std::exception& e) {
         qDebug() << "Exception caught while applying theme:" << e.what();
@@ -60,6 +70,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
     qDebug() << "MainWindow constructor completed";
 }
 
+MainWindow::~MainWindow() {
+    delete m_fileController;
+    delete m_documentModel;
+}
 
 QPlainTextEdit* MainWindow::getEditor() const {
     return m_editor;
@@ -71,20 +85,20 @@ void MainWindow::createActions() {
     newAct = new QAction(tr("&New"), this);
     newAct->setShortcuts(QKeySequence::New);
     newAct->setStatusTip(tr("Create a new file"));
-    connect(newAct, &QAction::triggered, this, &MainWindow::newFile);
-    qDebug() << "New action created";
+    connect(newAct, &QAction::triggered, m_fileController, &FileController::newFile);
+    qDebug() << "New action created and connected";
 
     openAct = new QAction(tr("&Open..."), this);
     openAct->setShortcuts(QKeySequence::Open);
     openAct->setStatusTip(tr("Open an existing file"));
-    connect(openAct, &QAction::triggered, this, &MainWindow::openFile);
-    qDebug() << "Open action created";
+    connect(openAct, &QAction::triggered, m_fileController, &FileController::openFile);
+    qDebug() << "Open action created and connected";
 
     saveAct = new QAction(tr("&Save"), this);
     saveAct->setShortcuts(QKeySequence::Save);
     saveAct->setStatusTip(tr("Save the document to disk"));
-    connect(saveAct, &QAction::triggered, this, &MainWindow::saveFile);
-    qDebug() << "Save action created";
+    connect(saveAct, &QAction::triggered, [this]() { m_fileController->saveFile(); });
+    qDebug() << "Save action created and connected";
 
     exitAct = new QAction(tr("E&xit"), this);
     exitAct->setShortcuts(QKeySequence::Quit);
@@ -99,7 +113,7 @@ void MainWindow::createActions() {
             QAction *themeAct = new QAction(themeName, this);
             themeAct->setCheckable(true);
             themeActGroup->addAction(themeAct);
-            connect(themeAct, &QAction::triggered, this, &MainWindow::changeTheme);
+            connect(themeAct, SIGNAL(triggered()), this, SLOT(changeTheme()));
             qDebug() << "Theme action created for:" << themeName;
         }
     } catch (const std::exception& e) {
@@ -134,53 +148,6 @@ void MainWindow::createMenus() {
     viewMenu = menuBar()->addMenu(tr("&View"));
     for (QAction *action : themeActGroup->actions()) {
         viewMenu->addAction(action);
-    }
-}
-
-void MainWindow::newFile() {
-    if (!m_editor->document()->isEmpty()) {
-        QMessageBox::StandardButton ret;
-        ret = QMessageBox::warning(this, tr("Application"),
-                                   tr("The document has been modified.\n"
-                                      "Do you want to save your changes?"),
-                                   QMessageBox::Save | QMessageBox::Discard | QMessageBox::Cancel);
-        if (ret == QMessageBox::Save)
-            saveFile();
-        else if (ret == QMessageBox::Cancel)
-            return;
-    }
-
-    m_editor->clear();
-    setWindowTitle("New File - LaTeX Editor");
-}
-
-void MainWindow::openFile() {
-    QString fileName = QFileDialog::getOpenFileName(this);
-    if (!fileName.isEmpty()) {
-        QFile file(fileName);
-        if (!file.open(QIODevice::ReadOnly)) {
-            QMessageBox::critical(this, tr("Error"), tr("Could not open file"));
-            return;
-        }
-        QTextStream in(&file);
-        m_editor->setPlainText(in.readAll());
-        file.close();
-        setWindowTitle(fileName + " - LaTeX Editor");
-    }
-}
-
-void MainWindow::saveFile() {
-    QString fileName = QFileDialog::getSaveFileName(this);
-    if (!fileName.isEmpty()) {
-        QFile file(fileName);
-        if (!file.open(QIODevice::WriteOnly)) {
-            QMessageBox::critical(this, tr("Error"), tr("Could not save file"));
-            return;
-        }
-        QTextStream out(&file);
-        out << m_editor->toPlainText();
-        file.close();
-        setWindowTitle(fileName + " - LaTeX Editor");
     }
 }
 

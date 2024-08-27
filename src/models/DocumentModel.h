@@ -1,3 +1,4 @@
+// DocumentModel.h
 #ifndef DOCUMENTMODEL_H
 #define DOCUMENTMODEL_H
 
@@ -13,11 +14,18 @@ public:
     QString getContent() const;
     void setContent(const QString &content);
 
+    void clear();
+
+    bool isModified() const;
+
+    void setModified(bool modified);
+
 signals:
     void contentChanged();
 
 private:
     QString m_content;
+    bool m_modified;
 };
 
 #endif // DOCUMENTMODEL_H

@@ -10,11 +10,17 @@
 #include "../utils/LaTeXHighlighter.h"
 #include "../utils/ThemeManager.h"
 
+class DocumentModel;
+
+class FileController;
+
 class MainWindow : public QMainWindow {
 Q_OBJECT
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
+
+    ~MainWindow();
     QPlainTextEdit* getEditor() const;
 
 public slots:
@@ -24,19 +30,19 @@ signals:
     void themeChangeRequested(const QString &themeName);
 
 private slots:
-    void newFile();
-    void openFile();
-    void saveFile();
     void changeTheme();
     void removeRTLOverride();
     void debugTextDirection();
     void testTheme();
+
 private:
     void createActions();
     void createMenus();
 
     QPlainTextEdit *m_editor;
     LaTeXHighlighter *m_highlighter;
+    DocumentModel *m_documentModel;
+    FileController *m_fileController;
 
     QMenu *fileMenu;
     QMenu *viewMenu;

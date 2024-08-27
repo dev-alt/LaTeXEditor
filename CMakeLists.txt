@@ -26,6 +26,7 @@ set(SOURCE_FILES
         src/models/Theme.cpp
         src/views/MainWindow.cpp
         src/controllers/EditorController.cpp
+        src/controllers/FileController.cpp
         src/utils/LaTeXHighlighter.cpp
         src/utils/ThemeManager.cpp
         resources.qrc
