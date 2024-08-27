@@ -31,7 +31,11 @@ jobs:
 
     - name: List Qt installation directory
       run: |
-        ls -R ${{ github.workspace }}/qt/
+        echo "Listing Qt directory:"
+        ls -R /home/runner/work/LaTeXEditor/LaTeXEditor/qt/
+
+    - name: Print Qt6_DIR value
+      run: echo "Qt6_DIR is set to: $Qt6_DIR"
 
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
@@ -40,8 +44,7 @@ jobs:
       shell: bash
       working-directory: ${{github.workspace}}/build
       run: |
-        export Qt6_DIR=${{ github.workspace }}/qt/6.2.4/gcc_64/lib/cmake/Qt6
-        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${{ github.workspace }}/qt/6.2.4/gcc_64
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=$Qt6_DIR
 
     - name: Build
       working-directory: ${{github.workspace}}/build
@@ -51,14 +54,14 @@ jobs:
     - name: List build directory
       run: ls -R ${{github.workspace}}/build
 
-    - name: Create deployment directory
+    - name: Find and copy Qt libraries
       run: |
         mkdir -p ${{github.workspace}}/deploy/lib
         cp ${{github.workspace}}/build/LaTeXEditor ${{github.workspace}}/deploy/
-        cp -L ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Core.so* ${{github.workspace}}/deploy/lib/
-        cp -L ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Gui.so* ${{github.workspace}}/deploy/lib/
-        cp -L ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Widgets.so* ${{github.workspace}}/deploy/lib/
-        cp -r ${{ github.workspace }}/qt/6.2.4/gcc_64/plugins ${{github.workspace}}/deploy/
+        find $Qt6_DIR -name "libQt6Core.so*" -exec cp -L {} ${{github.workspace}}/deploy/lib/ \;
+        find $Qt6_DIR -name "libQt6Gui.so*" -exec cp -L {} ${{github.workspace}}/deploy/lib/ \;
+        find $Qt6_DIR -name "libQt6Widgets.so*" -exec cp -L {} ${{github.workspace}}/deploy/lib/ \;
+        find $Qt6_DIR -name "plugins" -type d -exec cp -r {} ${{github.workspace}}/deploy/ \;
 
     - name: Create launch script
       run: |
