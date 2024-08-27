@@ -50,7 +50,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
 
     // Initialize and add LatexToolbar
     m_latexToolbar = new LatexToolbar(this);
-    addToolBar(m_latexToolbar);
+    addToolBar(Qt::TopToolBarArea, m_latexToolbar);
     qDebug() << "LatexToolbar created and added";
 
     // Initialize LatexToolbarController
