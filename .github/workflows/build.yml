@@ -1,5 +1,4 @@
-name: Build LaTeX Editor
-
+name: Build LaTeX Editor Windows
 on:
   push:
     branches: [ main ]
@@ -10,10 +9,8 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-
     steps:
-    - uses: actions/checkout@v2
-
+    - uses: actions/checkout@v4
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
@@ -23,33 +20,27 @@ jobs:
         arch: 'win64_msvc2019_64'
         dir: '${{ github.workspace }}/qt/'
         install-deps: 'true'
-
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
-
     - name: Configure CMake
       shell: bash
       working-directory: ${{github.workspace}}/build
       run: cmake $GITHUB_WORKSPACE -DCMAKE_PREFIX_PATH=$GITHUB_WORKSPACE/qt/6.2.4/msvc2019_64
-
     - name: Build
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: cmake --build . --config Release
-
     - name: Deploy Qt
       working-directory: ${{github.workspace}}/build/Release
       run: |
         $ENV:PATH += ";${{ github.workspace }}/qt/6.2.4/msvc2019_64/bin"
         windeployqt.exe LaTeXEditor.exe
-
     - name: List Release Directory Contents
       working-directory: ${{github.workspace}}/build/Release
       shell: bash
       run: ls -la
-
     - name: Upload artifact
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: LaTeXEditor-windows-latest
         path: ${{github.workspace}}/build/Release
