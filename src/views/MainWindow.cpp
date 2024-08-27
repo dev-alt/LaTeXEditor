@@ -23,56 +23,38 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
 
     QFont font("Arial", 12);
     m_editor->setFont(font);
-    qDebug() << "Editor font set";
 
     setCentralWidget(m_editor);
-    qDebug() << "Central widget set";
 
     // Initialize highlighter
     m_highlighter = new LaTeXHighlighter(m_editor->document());
-    qDebug() << "Highlighter created";
 
     // Initialize DocumentModel
     m_documentModel = new DocumentModel(this);
-    qDebug() << "DocumentModel created";
 
     // Initialize FileController
     m_fileController = new FileController(m_documentModel, this, this);
-    qDebug() << "FileController created";
-
-    qDebug() << "About to call createActions";
     createActions();
-    qDebug() << "Actions created";
-
-    qDebug() << "About to call createMenus";
     createMenus();
-    qDebug() << "Menus created";
 
     // Initialize and add LatexToolbar
     m_latexToolbar = new LatexToolbar(this);
     addToolBar(Qt::TopToolBarArea, m_latexToolbar);
-    qDebug() << "LatexToolbar created and added";
 
     // Initialize LatexToolbarController
     m_latexToolbarController = new LatexToolbarController(m_latexToolbar, m_documentModel, this);
-    qDebug() << "LatexToolbarController created";
 
     resize(800, 600);
     setWindowTitle("LaTeX Editor");
-    qDebug() << "Window properties set";
 
-    qDebug() << "About to apply initial theme";
     try {
         ThemeManager& themeManager = ThemeManager::getInstance();
-        qDebug() << "ThemeManager instance obtained";
         const Theme& initialTheme = themeManager.getCurrentTheme();
         qDebug() << "Initial theme obtained:" << initialTheme.name;
         updateTheme(initialTheme);
-        qDebug() << "updateTheme called";
 
         // Connect theme change signal
         connect(&themeManager, &ThemeManager::themeChanged, this, &MainWindow::updateTheme);
-        qDebug() << "Theme change signal connected";
     } catch (const std::exception& e) {
         qDebug() << "Exception caught while applying theme:" << e.what();
     } catch (...) {
@@ -99,27 +81,23 @@ void MainWindow::createActions() {
     newAct->setShortcuts(QKeySequence::New);
     newAct->setStatusTip(tr("Create a new file"));
     connect(newAct, &QAction::triggered, m_fileController, &FileController::newFile);
-    qDebug() << "New action created and connected";
 
     openAct = new QAction(tr("&Open..."), this);
     openAct->setShortcuts(QKeySequence::Open);
     openAct->setStatusTip(tr("Open an existing file"));
     connect(openAct, &QAction::triggered, m_fileController, &FileController::openFile);
-    qDebug() << "Open action created and connected";
+
 
     saveAct = new QAction(tr("&Save"), this);
     saveAct->setShortcuts(QKeySequence::Save);
     saveAct->setStatusTip(tr("Save the document to disk"));
     connect(saveAct, &QAction::triggered, [this]() { m_fileController->saveFile(); });
-    qDebug() << "Save action created and connected";
 
     exitAct = new QAction(tr("E&xit"), this);
     exitAct->setShortcuts(QKeySequence::Quit);
     exitAct->setStatusTip(tr("Exit the application"));
     connect(exitAct, &QAction::triggered, this, &QWidget::close);
-    qDebug() << "Exit action created";
 
-    qDebug() << "About to create theme actions";
     themeActGroup = new QActionGroup(this);
     try {
         for (const QString &themeName : ThemeManager::getInstance().getThemeNames()) {
@@ -127,7 +105,6 @@ void MainWindow::createActions() {
             themeAct->setCheckable(true);
             themeActGroup->addAction(themeAct);
             connect(themeAct, SIGNAL(triggered()), this, SLOT(changeTheme()));
-            qDebug() << "Theme action created for:" << themeName;
         }
     } catch (const std::exception& e) {
         qDebug() << "Exception caught while creating theme actions:" << e.what();
@@ -179,31 +156,24 @@ void MainWindow::testTheme() {
 }
 
 void MainWindow::updateTheme(const Theme &newTheme) {
-    qDebug() << "updateTheme called with theme:" << newTheme.name;
-    qDebug() << "Window color:" << newTheme.windowColor.name();
-    qDebug() << "Text color:" << newTheme.textColor.name();
-    qDebug() << "Base color:" << newTheme.baseColor.name();
-    qDebug() << "Highlight color:" << newTheme.highlightColor.name();
 
     if (m_highlighter) {
         m_highlighter->updateTheme(newTheme);
-        qDebug() << "Highlighter updated";
     } else {
         qDebug() << "Highlighter is null, skipping update";
     }
+
     // Update the checked state of theme actions
     for (QAction* action : themeActGroup->actions()) {
         action->setChecked(action->text() == newTheme.name);
     }
 
-    qDebug() << "Theme action checked state updated";
     // Update editor colors
     if (m_editor) {
         QPalette editorPalette = m_editor->palette();
         editorPalette.setColor(QPalette::Base, newTheme.baseColor);
         editorPalette.setColor(QPalette::Text, newTheme.textColor);
         m_editor->setPalette(editorPalette);
-        qDebug() << "Editor palette updated";
     } else {
         qDebug() << "Editor is null, skipping palette update";
     }
@@ -213,7 +183,22 @@ void MainWindow::updateTheme(const Theme &newTheme) {
     windowPalette.setColor(QPalette::Window, newTheme.windowColor);
     windowPalette.setColor(QPalette::WindowText, newTheme.textColor);
     setPalette(windowPalette);
-    qDebug() << "Window palette updated";
+
+    // Update toolbar styles
+    if (m_latexToolbar) {
+        QString toolbarStyle = QString(
+                "QToolBar { background-color: %1; color: %2; }"
+                "QToolBar QToolButton { background-color: %1; color: %2; border: 1px solid %3; }"
+                "QToolBar QToolButton:hover { background-color: %4; }"
+        ).arg(newTheme.windowColor.name())
+                .arg(newTheme.textColor.name())
+                .arg(newTheme.highlightColor.name())
+                .arg(newTheme.highlightColor.name());
+
+        m_latexToolbar->setStyleSheet(toolbarStyle);
+    } else {
+        qDebug() << "LatexToolbar is null, skipping style update";
+    }
 
     // Set a specific style for the menu bar to ensure readability
     QString menuBarStyle = QString(
@@ -227,7 +212,6 @@ void MainWindow::updateTheme(const Theme &newTheme) {
 
     if (menuBar()) {
         menuBar()->setStyleSheet(menuBarStyle);
-        qDebug() << "Menu bar style updated";
     } else {
         qDebug() << "Menu bar is null, skipping style update";
     }
@@ -247,12 +231,10 @@ void MainWindow::updateTheme(const Theme &newTheme) {
     if (viewMenu) {
         viewMenu->setStyleSheet(menuStyle);
     }
-    qDebug() << "Menu styles updated";
 
     // Update status bar if you have one
     if (statusBar()) {
         statusBar()->setPalette(windowPalette);
-        qDebug() << "Status bar updated";
     } else {
         qDebug() << "Status bar is null, skipping update";
     }

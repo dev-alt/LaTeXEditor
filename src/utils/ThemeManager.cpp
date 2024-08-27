@@ -3,13 +3,10 @@
 
 ThemeManager& ThemeManager::getInstance() {
     static ThemeManager instance;
-    qDebug() << "ThemeManager::getInstance() called";
     return instance;
 }
 
 const Theme& ThemeManager::getCurrentTheme() const {
-    qDebug() << "ThemeManager::getCurrentTheme() called";
-    qDebug() << "Current theme: " << m_themes[m_currentThemeIndex].name;
     return m_themes[m_currentThemeIndex];
 }
 
