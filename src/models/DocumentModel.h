@@ -13,12 +13,11 @@ public:
 
     QString getContent() const;
     void setContent(const QString &content);
-
     void clear();
-
     bool isModified() const;
-
     void setModified(bool modified);
+
+    QString generatePreview() const;
 
 signals:
     void contentChanged();

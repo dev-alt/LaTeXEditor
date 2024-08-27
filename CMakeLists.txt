@@ -20,15 +20,24 @@ endif()
 
 find_package(Qt6 COMPONENTS Widgets REQUIRED)
 
+if (Qt6WebEngineWidgets_FOUND)
+    add_definitions(-DQT_WEBENGINEWIDGETS_LIB)
+    message(STATUS "Qt6WebEngineWidgets found, enabling web-based preview")
+else ()
+    message(STATUS "Qt6WebEngineWidgets not found, falling back to QTextBrowser for preview")
+endif ()
+
 set(SOURCE_FILES
         src/main.cpp
         src/models/DocumentModel.cpp
         src/models/Theme.cpp
         src/views/MainWindow.cpp
         src/views/LatexToolbar.cpp
+        src/views/PreviewWindow.cpp
         src/controllers/EditorController.cpp
         src/controllers/FileController.cpp
         src/controllers/LatexToolbarController.cpp
+        src/controllers/PreviewController.cpp
         src/utils/LaTeXHighlighter.cpp
         src/utils/ThemeManager.cpp
         resources.qrc
@@ -48,6 +57,10 @@ endif()
 add_executable(LaTeXEditor MACOSX_BUNDLE ${SOURCE_FILES})
 
 target_link_libraries(LaTeXEditor PRIVATE Qt6::Widgets)
+
+if (Qt6WebEngineWidgets_FOUND)
+    target_link_libraries(LaTeXEditor PRIVATE Qt6::WebEngineWidgets)
+endif ()
 
 if(APPLE)
     set_target_properties(LaTeXEditor PROPERTIES

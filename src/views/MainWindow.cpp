@@ -87,6 +87,7 @@ MainWindow::~MainWindow() {
     delete m_documentModel;
 }
 
+
 QPlainTextEdit* MainWindow::getEditor() const {
     return m_editor;
 }
