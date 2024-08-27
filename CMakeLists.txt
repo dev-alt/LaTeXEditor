@@ -7,6 +7,12 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
+# Set the deployment target to macOS 14.3 (Sonoma)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "14.3" CACHE STRING "Minimum OS X deployment version")
+
+# Ensure we're building for x86_64
+set(CMAKE_OSX_ARCHITECTURES "x86_64")
+
 # Find the Qt installation
 if(DEFINED ENV{Qt6_DIR} AND NOT DEFINED Qt6_DIR)
     set(Qt6_DIR $ENV{Qt6_DIR})
@@ -15,14 +21,14 @@ endif()
 find_package(Qt6 COMPONENTS Widgets REQUIRED)
 
 set(SOURCE_FILES
-    src/main.cpp
-    src/models/DocumentModel.cpp
-    src/models/Theme.cpp
-    src/views/MainWindow.cpp
-    src/controllers/EditorController.cpp
-    src/utils/LaTeXHighlighter.cpp
-    src/utils/ThemeManager.cpp
-    resources.qrc
+        src/main.cpp
+        src/models/DocumentModel.cpp
+        src/models/Theme.cpp
+        src/views/MainWindow.cpp
+        src/controllers/EditorController.cpp
+        src/utils/LaTeXHighlighter.cpp
+        src/utils/ThemeManager.cpp
+        resources.qrc
 )
 
 if(APPLE)
@@ -42,17 +48,18 @@ target_link_libraries(LaTeXEditor PRIVATE Qt6::Widgets)
 
 if(APPLE)
     set_target_properties(LaTeXEditor PROPERTIES
-        MACOSX_BUNDLE TRUE
-        MACOSX_BUNDLE_GUI_IDENTIFIER com.yourcompany.LaTeXEditor
-        MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
-        MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+            MACOSX_BUNDLE TRUE
+            MACOSX_BUNDLE_GUI_IDENTIFIER com.yourcompany.LaTeXEditor
+            MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
+            MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
+            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/Info.plist.in
     )
 endif()
 
 # Install rules
 install(TARGETS LaTeXEditor
-    BUNDLE DESTINATION .
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        BUNDLE DESTINATION .
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
 # Include a custom command for macdeployqt if on macOS
@@ -60,10 +67,10 @@ if(APPLE)
     find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${Qt6_DIR}/../../../bin")
     if(MACDEPLOYQT_EXECUTABLE)
         add_custom_command(TARGET LaTeXEditor POST_BUILD
-            COMMAND "${MACDEPLOYQT_EXECUTABLE}"
-                    "$<TARGET_FILE_DIR:LaTeXEditor>/../.."
-                    -always-overwrite
-            COMMENT "Running macdeployqt..."
+                COMMAND "${MACDEPLOYQT_EXECUTABLE}"
+                "$<TARGET_FILE_DIR:LaTeXEditor>/../.."
+                -always-overwrite
+                COMMENT "Running macdeployqt..."
         )
     endif()
 endif()
