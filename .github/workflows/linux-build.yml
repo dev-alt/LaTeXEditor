@@ -32,7 +32,7 @@ jobs:
     - name: List Qt installation directory
       run: |
         echo "Listing Qt directory:"
-        ls -R /home/runner/work/LaTeXEditor/LaTeXEditor/qt/
+        ls -R ${{ github.workspace }}/qt/
 
     - name: Print Qt6_DIR value
       run: echo "Qt6_DIR is set to: $Qt6_DIR"
