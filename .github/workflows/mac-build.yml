@@ -37,7 +37,8 @@ jobs:
     - name: Build
       working-directory: ${{github.workspace}}/build
       shell: bash
-      run: cmake --build . --config Release
+      run: |
+        cmake --build . --config Release -- -j1
 
     - name: List build directory
       working-directory: ${{github.workspace}}/build
