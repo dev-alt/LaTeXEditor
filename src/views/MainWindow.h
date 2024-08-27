@@ -3,20 +3,21 @@
 
 #include <QMainWindow>
 #include <QPlainTextEdit>
-#include <QMenuBar>
-#include <QMenu>
 #include <QAction>
+#include <QMenu>
+#include <QMenuBar>
 #include <QActionGroup>
 #include "../utils/LaTeXHighlighter.h"
-#include "../models/Theme.h"
+#include "../utils/ThemeManager.h"
 
 class MainWindow : public QMainWindow {
 Q_OBJECT
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
-
     QPlainTextEdit* getEditor() const;
+
+public slots:
     void updateTheme(const Theme &newTheme);
 
 signals:
@@ -27,20 +28,24 @@ private slots:
     void openFile();
     void saveFile();
     void changeTheme();
-
+    void removeRTLOverride();
+    void debugTextDirection();
+    void testTheme();
 private:
-    QPlainTextEdit *m_editor;
-    LaTeXHighlighter *m_highlighter;
-
     void createActions();
     void createMenus();
 
+    QPlainTextEdit *m_editor;
+    LaTeXHighlighter *m_highlighter;
+
     QMenu *fileMenu;
-    QMenu *viewMenu;  // Make sure this is declared
+    QMenu *viewMenu;
+
     QAction *newAct;
     QAction *openAct;
     QAction *saveAct;
     QAction *exitAct;
+
     QActionGroup *themeActGroup;
 };
 

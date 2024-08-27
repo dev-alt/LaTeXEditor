@@ -1,11 +1,19 @@
 #include "ThemeManager.h"
+#include <QDebug>
 
 ThemeManager& ThemeManager::getInstance() {
     static ThemeManager instance;
+    qDebug() << "ThemeManager::getInstance() called";
     return instance;
 }
 
-ThemeManager::ThemeManager() : m_currentThemeIndex(0) {
+const Theme& ThemeManager::getCurrentTheme() const {
+    qDebug() << "ThemeManager::getCurrentTheme() called";
+    qDebug() << "Current theme: " << m_themes[m_currentThemeIndex].name;
+    return m_themes[m_currentThemeIndex];
+}
+
+ThemeManager::ThemeManager() : QObject(), m_currentThemeIndex(0) {
     initializeDefaultThemes();
 }
 
@@ -59,8 +67,4 @@ QStringList ThemeManager::getThemeNames() const {
         names << theme.name;
     }
     return names;
-}
-
-const Theme& ThemeManager::getCurrentTheme() const {
-    return m_themes[m_currentThemeIndex];
 }
