@@ -3,7 +3,6 @@ project(LaTeXEditor VERSION 1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -27,17 +26,17 @@ set(SOURCE_FILES
 )
 
 if(APPLE)
-    set(MACOSX_BUNDLE_ICON_FILE latex_editor_icon.icns)
-    set(APP_ICON_MACOSX ${CMAKE_CURRENT_SOURCE_DIR}/latex_editor_icon.icns)
-    set_source_files_properties(${APP_ICON_MACOSX} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
-    list(APPEND SOURCE_FILES ${APP_ICON_MACOSX})
+    set(ICON_FILE ${CMAKE_CURRENT_SOURCE_DIR}/latex_editor_icon.icns)
+    if(EXISTS ${ICON_FILE})
+        set(MACOSX_BUNDLE_ICON_FILE latex_editor_icon.icns)
+        set_source_files_properties(${ICON_FILE} PROPERTIES MACOSX_PACKAGE_LOCATION "Resources")
+        list(APPEND SOURCE_FILES ${ICON_FILE})
+    else()
+        message(WARNING "Icon file ${ICON_FILE} not found. The application will be built without an icon.")
+    endif()
 endif()
 
-if(APPLE)
-    add_executable(LaTeXEditor MACOSX_BUNDLE ${SOURCE_FILES})
-else()
-    add_executable(LaTeXEditor ${SOURCE_FILES})
-endif()
+add_executable(LaTeXEditor MACOSX_BUNDLE ${SOURCE_FILES})
 
 target_link_libraries(LaTeXEditor PRIVATE Qt6::Widgets)
 
@@ -48,4 +47,23 @@ if(APPLE)
         MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
         MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     )
+endif()
+
+# Install rules
+install(TARGETS LaTeXEditor
+    BUNDLE DESTINATION .
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
+
+# Include a custom command for macdeployqt if on macOS
+if(APPLE)
+    find_program(MACDEPLOYQT_EXECUTABLE macdeployqt HINTS "${Qt6_DIR}/../../../bin")
+    if(MACDEPLOYQT_EXECUTABLE)
+        add_custom_command(TARGET LaTeXEditor POST_BUILD
+            COMMAND "${MACDEPLOYQT_EXECUTABLE}"
+                    "$<TARGET_FILE_DIR:LaTeXEditor>/../.."
+                    -always-overwrite
+            COMMENT "Running macdeployqt..."
+        )
+    endif()
 endif()
