@@ -5,14 +5,11 @@
 #include <QIcon>
 #include <QActionGroup>
 #include <QStatusBar>
+#include <QMessageBox>
 #include "../controllers/FileController.h"
-#include "../models/DocumentModel.h"
-#include "../controllers/LatexToolbarController.h"
-#include "../utils/LaTeXHighlighter.h"
-#include "../utils/ThemeManager.h"
-#include "../controllers/PreviewController.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nullptr) {
+    try {
     qDebug() << "MainWindow constructor started";
 
     // Create editor
@@ -70,22 +67,34 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
     resize(800, 600);
     setWindowTitle("LaTeX Editor");
 
-    try {
-        ThemeManager& themeManager = ThemeManager::getInstance();
-        const Theme& initialTheme = themeManager.getCurrentTheme();
-        qDebug() << "Initial theme obtained:" << initialTheme.name;
-        updateTheme(initialTheme);
+        try {
+            ThemeManager &themeManager = ThemeManager::getInstance();
+            const Theme &initialTheme = themeManager.getCurrentTheme();
+            qDebug() << "Initial theme obtained:" << initialTheme.name;
+            updateTheme(initialTheme);
 
-        // Connect theme change signal
-        connect(&themeManager, &ThemeManager::themeChanged, this, &MainWindow::updateTheme);
+            // Connect theme change signal
+            connect(&themeManager, &ThemeManager::themeChanged, this, &MainWindow::updateTheme);
+        } catch (const std::exception &e) {
+            qDebug() << "Exception caught while applying theme:" << e.what();
+            QMessageBox::warning(this, "Theme Error", QString("Error applying theme: %1").arg(e.what()));
+        } catch (...) {
+            qDebug() << "Unknown exception caught while applying theme";
+            QMessageBox::warning(this, "Theme Error", "Unknown error occurred while applying theme");
+        }
+
+        qDebug() << "MainWindow constructor completed";
     } catch (const std::exception& e) {
-        qDebug() << "Exception caught while applying theme:" << e.what();
+        qDebug() << "Exception caught in MainWindow constructor:" << e.what();
+        QMessageBox::critical(this, "Initialization Error", QString("Error initializing MainWindow: %1").arg(e.what()));
+        throw; // Re-throw the exception to be caught in main()
     } catch (...) {
-        qDebug() << "Unknown exception caught while applying theme";
+        qDebug() << "Unknown exception caught in MainWindow constructor";
+        QMessageBox::critical(this, "Initialization Error", "Unknown error occurred while initializing MainWindow");
+        throw; // Re-throw the exception to be caught in main()
     }
-
-    qDebug() << "MainWindow constructor completed";
 }
+
 
 MainWindow::~MainWindow() {
     delete m_fileController;

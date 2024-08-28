@@ -27,6 +27,8 @@ else ()
     message(STATUS "Qt6WebEngineWidgets not found, falling back to QTextBrowser for preview")
 endif ()
 
+add_definitions(-DQT_MESSAGELOGCONTEXT)
+
 set(SOURCE_FILES
         src/main.cpp
         src/models/DocumentModel.cpp

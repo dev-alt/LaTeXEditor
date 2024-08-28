@@ -3,6 +3,7 @@
 #include "views/MainWindow.h"
 #include "controllers/EditorController.h"
 #include <QMessageBox>
+
 int main(int argc, char *argv[]) {
     try {
         QApplication app(argc, argv);
@@ -25,3 +26,4 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 }
+
