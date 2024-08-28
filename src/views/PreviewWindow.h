@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <QTextBrowser>
+#include "../models/Theme.h"
 
 #ifdef QT_WEBENGINEWIDGETS_LIB
 #include <QWebEngineView>
@@ -14,7 +15,10 @@ Q_OBJECT
 public:
     explicit PreviewWindow(QWidget *parent = nullptr);
 
+public slots:
     void updatePreview(const QString &htmlContent);
+
+    void updateTheme(const Theme &theme);
 
 private:
 #ifdef QT_WEBENGINEWIDGETS_LIB

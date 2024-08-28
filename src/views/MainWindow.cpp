@@ -11,26 +11,37 @@
 #include "../controllers/LatexToolbarController.h"
 #include "../utils/LaTeXHighlighter.h"
 #include "../utils/ThemeManager.h"
+#include "../controllers/PreviewController.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nullptr) {
     qDebug() << "MainWindow constructor started";
 
+    // Create editor
     m_editor = new QPlainTextEdit(this);
     qDebug() << "PlainTextEdit created";
-
     m_editor->document()->setDefaultTextOption(QTextOption(Qt::AlignLeft | Qt::AlignTop));
     m_editor->setLayoutDirection(Qt::LeftToRight);
-
     QFont font("Arial", 12);
     m_editor->setFont(font);
 
-    setCentralWidget(m_editor);
+    // Initialize DocumentModel
+    m_documentModel = new DocumentModel(this);
+
+    // Initialize PreviewWindow
+    m_previewWindow = new PreviewWindow(this);
+
+    // Create a horizontal layout to hold the editor and preview
+    QWidget *centralWidget = new QWidget(this);
+    QHBoxLayout *mainLayout = new QHBoxLayout(centralWidget);
+    mainLayout->addWidget(m_editor);
+    mainLayout->addWidget(m_previewWindow);
+    setCentralWidget(centralWidget);
+
+    // Initialize PreviewController
+    m_previewController = new PreviewController(m_documentModel, m_previewWindow, this);
 
     // Initialize highlighter
     m_highlighter = new LaTeXHighlighter(m_editor->document());
-
-    // Initialize DocumentModel
-    m_documentModel = new DocumentModel(this);
 
     // Initialize FileController
     m_fileController = new FileController(m_documentModel, this, this);
@@ -237,6 +248,12 @@ void MainWindow::updateTheme(const Theme &newTheme) {
         statusBar()->setPalette(windowPalette);
     } else {
         qDebug() << "Status bar is null, skipping update";
+    }
+
+    if (m_previewWindow) {
+        m_previewWindow->updateTheme(newTheme);
+    } else {
+        qDebug() << "Preview window is null, skipping theme update";
     }
 
     // Force an update of the UI

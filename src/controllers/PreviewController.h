@@ -12,7 +12,6 @@ public:
     explicit PreviewController(DocumentModel *model, PreviewWindow *view, QObject *parent = nullptr);
 
 public slots:
-
     void updatePreview();
 
 private:

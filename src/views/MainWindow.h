@@ -11,9 +11,10 @@
 #include "../utils/ThemeManager.h"
 #include "LatexToolbar.h"
 #include "../controllers/LatexToolbarController.h"
+#include "PreviewWindow.h"
+#include "../controllers/PreviewController.h"
 
 class DocumentModel;
-
 class FileController;
 
 class MainWindow : public QMainWindow {
@@ -21,7 +22,6 @@ Q_OBJECT
 
 public:
     explicit MainWindow(QWidget *parent = nullptr);
-
     ~MainWindow();
     QPlainTextEdit* getEditor() const;
 
@@ -47,6 +47,8 @@ private:
     FileController *m_fileController;
     LatexToolbar *m_latexToolbar;
     LatexToolbarController *m_latexToolbarController;
+    PreviewWindow *m_previewWindow;
+    PreviewController *m_previewController;
 
     QMenu *fileMenu;
     QMenu *viewMenu;

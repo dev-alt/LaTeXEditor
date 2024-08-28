@@ -1,10 +1,8 @@
 #include "PreviewController.h"
-#include "../models/DocumentModel.h"
-#include "../views/PreviewWindow.h"
+#include <QDebug>
 
 PreviewController::PreviewController(DocumentModel *model, PreviewWindow *view, QObject *parent)
         : QObject(parent), m_model(model), m_view(view) {
-
     connect(m_model, &DocumentModel::contentChanged, this, &PreviewController::updatePreview);
 }
 
@@ -19,9 +17,7 @@ void PreviewController::updatePreview() {
     } else {
         qDebug() << "Preview update skipped (content unchanged)";
     }
-    qDebug() << "PreviewController::updatePreview finished";
 }
-
 
 QString PreviewController::generatePreviewContent(const QString &latexContent) {
     // This is a placeholder implementation. In a real-world scenario,
