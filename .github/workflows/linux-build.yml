@@ -1,19 +1,15 @@
 name: Build LaTeX Editor for Linux
-
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: ubuntu-20.04
-
     steps:
     - uses: actions/checkout@v2
-
     - name: Install Qt
       uses: jurplel/install-qt-action@v3
       with:
@@ -23,36 +19,35 @@ jobs:
         arch: 'gcc_64'
         dir: '${{ github.workspace }}/qt/'
         install-deps: 'true'
-
     - name: Install additional dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y libgl1-mesa-dev
-
+    - name: List Qt installation directory
+      run: |
+        echo "Listing Qt directory:"
+        ls -R ${{ github.workspace }}/qt/
     - name: Create Build Environment
       run: cmake -E make_directory ${{github.workspace}}/build
-
     - name: Configure CMake
       shell: bash
       working-directory: ${{github.workspace}}/build
       run: |
-        export Qt6_DIR=${{ github.workspace }}/qt/6.2.4/gcc_64/lib/cmake/Qt6
-        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release
-
+        cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=Release -DCMAKE_PREFIX_PATH=${{ env.Qt6_DIR }}
     - name: Build
       working-directory: ${{github.workspace}}/build
       shell: bash
       run: cmake --build . --config Release
-
-    - name: Create deployment directory
+    - name: List build directory
+      run: ls -R ${{github.workspace}}/build
+    - name: Find and copy Qt libraries
       run: |
         mkdir -p ${{github.workspace}}/deploy/lib
         cp ${{github.workspace}}/build/LaTeXEditor ${{github.workspace}}/deploy/
-        cp ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Core.so.6 ${{github.workspace}}/deploy/lib/
-        cp ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Gui.so.6 ${{github.workspace}}/deploy/lib/
-        cp ${{ github.workspace }}/qt/6.2.4/gcc_64/lib/libQt6Widgets.so.6 ${{github.workspace}}/deploy/lib/
-        cp -r ${{ github.workspace }}/qt/6.2.4/gcc_64/plugins ${{github.workspace}}/deploy/
-
+        find ${{ env.Qt6_DIR }} -name "libQt6Core.so*" -exec cp -L {} ${{github.workspace}}/deploy/lib/ \;
+        find ${{ env.Qt6_DIR }} -name "libQt6Gui.so*" -exec cp -L {} ${{github.workspace}}/deploy/lib/ \;
+        find ${{ env.Qt6_DIR }} -name "libQt6Widgets.so*" -exec cp -L {} ${{github.workspace}}/deploy/lib/ \;
+        find ${{ env.Qt6_DIR }} -name "plugins" -type d -exec cp -r {} ${{github.workspace}}/deploy/ \;
     - name: Create launch script
       run: |
         echo '#!/bin/bash' > ${{github.workspace}}/deploy/run_LaTeXEditor.sh
@@ -61,10 +56,8 @@ jobs:
         echo 'export QT_PLUGIN_PATH="$DIR/plugins"' >> ${{github.workspace}}/deploy/run_LaTeXEditor.sh
         echo '"$DIR/LaTeXEditor"' >> ${{github.workspace}}/deploy/run_LaTeXEditor.sh
         chmod +x ${{github.workspace}}/deploy/run_LaTeXEditor.sh
-
     - name: Create tarball
       run: tar -czvf LaTeXEditor-linux.tar.gz -C ${{github.workspace}}/deploy .
-
     - name: Upload artifact
       uses: actions/upload-artifact@v2
       with:
