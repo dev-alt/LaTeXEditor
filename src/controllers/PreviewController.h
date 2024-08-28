@@ -12,12 +12,12 @@ public:
     explicit PreviewController(DocumentModel *model, PreviewWindow *view, QObject *parent = nullptr);
 
 public slots:
-    void updatePreview();
+
+    void updatePreview(const QString &content = QString());
 
 private:
     QString generatePreviewContent(const QString &latexContent);
 
-    QString m_lastContent;
     DocumentModel *m_model;
     PreviewWindow *m_view;
 };

@@ -3,24 +3,21 @@
 
 PreviewController::PreviewController(DocumentModel *model, PreviewWindow *view, QObject *parent)
         : QObject(parent), m_model(model), m_view(view) {
-    connect(m_model, &DocumentModel::contentChanged, this, &PreviewController::updatePreview);
+    connect(m_model, &DocumentModel::contentChanged, this, [this]() { updatePreview(); });
 }
 
-void PreviewController::updatePreview() {
+void PreviewController::updatePreview(const QString &content) {
     qDebug() << "PreviewController::updatePreview called";
-    QString newContent = m_model->getContent();
-    if (newContent != m_lastContent) {
-        m_lastContent = newContent;
-        QString htmlContent = generatePreviewContent(newContent);
-        m_view->updatePreview(htmlContent);
-        qDebug() << "Preview updated";
-    } else {
-        qDebug() << "Preview update skipped (content unchanged)";
-    }
+    QString latexContent = content.isEmpty() ? m_model->getContent() : content;
+    QString htmlContent = generatePreviewContent(latexContent);
+    m_view->updatePreview(htmlContent);
+    qDebug() << "Preview updated";
 }
 
 QString PreviewController::generatePreviewContent(const QString &latexContent) {
-    // This is a placeholder implementation. In a real-world scenario,
-    // you would use a LaTeX to HTML converter here.
-    return "<html><body><pre>" + latexContent.toHtmlEscaped() + "</pre></body></html>";
+    // This is still a placeholder implementation.
+    // In a real-world scenario, you would use a LaTeX to HTML converter here.
+    QString htmlContent =
+            "<html><body><h1>LaTeX Preview</h1><pre>" + latexContent.toHtmlEscaped() + "</pre></body></html>";
+    return htmlContent;
 }

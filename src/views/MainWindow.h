@@ -28,6 +28,8 @@ public:
 public slots:
     void updateTheme(const Theme &newTheme);
 
+    void rebuildPreview();
+
 signals:
     void themeChangeRequested(const QString &themeName);
 
@@ -57,6 +59,7 @@ private:
     QAction *openAct;
     QAction *saveAct;
     QAction *exitAct;
+    QAction *rebuildPreviewAct;
 
     QActionGroup *themeActGroup;
 };

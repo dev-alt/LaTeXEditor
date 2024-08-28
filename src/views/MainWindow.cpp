@@ -19,6 +19,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
     // Create editor
     m_editor = new QPlainTextEdit(this);
     qDebug() << "PlainTextEdit created";
+
     m_editor->document()->setDefaultTextOption(QTextOption(Qt::AlignLeft | Qt::AlignTop));
     m_editor->setLayoutDirection(Qt::LeftToRight);
     QFont font("Arial", 12);
@@ -26,6 +27,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
 
     // Initialize DocumentModel
     m_documentModel = new DocumentModel(this);
+
+    // Connect editor's textChanged signal to update the DocumentModel
+    connect(m_editor, &QPlainTextEdit::textChanged, this, [this]() {
+        m_documentModel->setContent(m_editor->toPlainText());
+    });
 
     // Initialize PreviewWindow
     m_previewWindow = new PreviewWindow(this);
@@ -48,12 +54,21 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
     createActions();
     createMenus();
 
+    // Create rebuild preview action
+    rebuildPreviewAct = new QAction(tr("Rebuild Preview"), this);
+    rebuildPreviewAct->setStatusTip(tr("Rebuild the LaTeX preview"));
+    connect(rebuildPreviewAct, &QAction::triggered, this, &MainWindow::rebuildPreview);
+
     // Initialize and add LatexToolbar
     m_latexToolbar = new LatexToolbar(this);
     addToolBar(Qt::TopToolBarArea, m_latexToolbar);
 
     // Initialize LatexToolbarController
     m_latexToolbarController = new LatexToolbarController(m_latexToolbar, m_documentModel, this);
+
+    // Add rebuild preview action to toolbar
+    QToolBar *toolBar = addToolBar(tr("Tools"));
+    toolBar->addAction(rebuildPreviewAct);
 
     resize(800, 600);
     setWindowTitle("LaTeX Editor");
@@ -109,6 +124,11 @@ void MainWindow::createActions() {
     exitAct->setStatusTip(tr("Exit the application"));
     connect(exitAct, &QAction::triggered, this, &QWidget::close);
 
+    rebuildPreviewAct = new QAction(tr("&Rebuild Preview"), this);
+    rebuildPreviewAct->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_R));
+    rebuildPreviewAct->setStatusTip(tr("Rebuild the LaTeX preview"));
+    connect(rebuildPreviewAct, &QAction::triggered, this, &MainWindow::rebuildPreview);
+
     themeActGroup = new QActionGroup(this);
     try {
         for (const QString &themeName : ThemeManager::getInstance().getThemeNames()) {
@@ -149,6 +169,15 @@ void MainWindow::createMenus() {
     viewMenu = menuBar()->addMenu(tr("&View"));
     for (QAction *action : themeActGroup->actions()) {
         viewMenu->addAction(action);
+    }
+    viewMenu->addSeparator();
+    viewMenu->addAction(rebuildPreviewAct);
+}
+
+void MainWindow::rebuildPreview() {
+    if (m_previewController && m_editor) {
+        QString currentContent = m_editor->toPlainText();
+        m_previewController->updatePreview(currentContent);
     }
 }
 
