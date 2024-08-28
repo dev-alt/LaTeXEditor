@@ -1,6 +1,5 @@
 #include "MainWindow.h"
 #include <QVBoxLayout>
-#include <QMessageBox>
 #include <QFileDialog>
 #include <QTextStream>
 #include <QIcon>
@@ -29,9 +28,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
     m_documentModel = new DocumentModel(this);
 
     // Connect editor's textChanged signal to update the DocumentModel
-    connect(m_editor, &QPlainTextEdit::textChanged, this, [this]() {
-        m_documentModel->setContent(m_editor->toPlainText());
-    });
+    connect(m_editor, &QPlainTextEdit::textChanged, this, &MainWindow::updateDocumentModelFromEditor);
 
     // Initialize PreviewWindow
     m_previewWindow = new PreviewWindow(this);
@@ -157,6 +154,21 @@ void MainWindow::debugTextDirection() {
     qDebug() << "Layout direction:" << m_editor->layoutDirection();
     qDebug() << "First character Unicode:" << (m_editor->toPlainText().isEmpty() ? "Empty" : QString::number(m_editor->toPlainText()[0].unicode()));
 }
+
+void MainWindow::updateDocumentModelFromEditor() {
+    // Store the current cursor position
+    QTextCursor cursor = m_editor->textCursor();
+    int position = cursor.position();
+
+    // Get the content and update the model
+    QString content = m_editor->toPlainText();
+    m_documentModel->setContent(content);
+
+    // Restore the cursor position
+    cursor.setPosition(position);
+    m_editor->setTextCursor(cursor);
+}
+
 
 void MainWindow::createMenus() {
     fileMenu = menuBar()->addMenu(tr("&File"));

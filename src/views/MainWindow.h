@@ -28,6 +28,7 @@ public:
 public slots:
     void updateTheme(const Theme &newTheme);
 
+    void updateDocumentModelFromEditor();
     void rebuildPreview();
 
 signals:
