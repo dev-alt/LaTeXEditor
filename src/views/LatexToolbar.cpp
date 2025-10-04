@@ -5,6 +5,7 @@ LatexToolbar::LatexToolbar(QWidget *parent) : QToolBar(parent) {
     createMathActions();
     createStructureActions();
     createEnvironmentActions();
+    createBibTeXActions();
 }
 
 void LatexToolbar::createTextFormatActions() {
@@ -67,6 +68,29 @@ QAction *LatexToolbar::createAction(const QString &text, const QString &command,
         emit commandInsertRequested(action->data().toString());
     });
     return action;
+}
+
+void LatexToolbar::createBibTeXActions() {
+    QMenu *bibMenu = createMenu("BibTeX");
+    bibMenu->addAction(createAction("Article",
+                                    "@article{key,\n  author = {},\n  title = {},\n  journal = {},\n  year = {},\n}",
+                                    "Insert article citation"));
+    bibMenu->addAction(createAction("Book",
+                                    "@book{key,\n  author = {},\n  title = {},\n  publisher = {},\n  year = {},\n}",
+                                    "Insert book citation"));
+    bibMenu->addAction(createAction("InProceedings",
+                                    "@inproceedings{key,\n  author = {},\n  title = {},\n  booktitle = {},\n  year = {},\n}",
+                                    "Insert conference paper citation"));
+    bibMenu->addAction(createAction("Misc",
+                                    "@misc{key,\n  author = {},\n  title = {},\n  howpublished = {},\n  year = {},\n}",
+                                    "Insert miscellaneous citation"));
+    bibMenu->addAction(createAction("Cite",
+                                    "\\cite{}",
+                                    "Insert citation reference"));
+    bibMenu->addAction(createAction("Bibliography",
+                                    "\\bibliography{references}\n\\bibliographystyle{plain}",
+                                    "Insert bibliography"));
+    addAction(bibMenu->menuAction());
 }
 
 QMenu *LatexToolbar::createMenu(const QString &title) {

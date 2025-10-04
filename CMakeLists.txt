@@ -18,7 +18,7 @@ if(DEFINED ENV{Qt6_DIR} AND NOT DEFINED Qt6_DIR)
     set(Qt6_DIR $ENV{Qt6_DIR})
 endif()
 
-find_package(Qt6 COMPONENTS Widgets REQUIRED)
+find_package(Qt6 COMPONENTS Widgets PrintSupport REQUIRED)
 
 if (Qt6WebEngineWidgets_FOUND)
     add_definitions(-DQT_WEBENGINEWIDGETS_LIB)
@@ -36,12 +36,15 @@ set(SOURCE_FILES
         src/views/MainWindow.cpp
         src/views/LatexToolbar.cpp
         src/views/PreviewWindow.cpp
+        src/views/FindReplaceDialog.cpp
         src/controllers/EditorController.cpp
         src/controllers/FileController.cpp
         src/controllers/LatexToolbarController.cpp
         src/controllers/PreviewController.cpp
         src/utils/LaTeXHighlighter.cpp
         src/utils/ThemeManager.cpp
+        src/utils/CodeEditor.cpp
+        src/utils/LaTeXErrorChecker.cpp
         resources.qrc
 )
 
@@ -58,7 +61,7 @@ endif()
 
 add_executable(LaTeXEditor MACOSX_BUNDLE ${SOURCE_FILES})
 
-target_link_libraries(LaTeXEditor PRIVATE Qt6::Widgets)
+target_link_libraries(LaTeXEditor PRIVATE Qt6::Widgets Qt6::PrintSupport)
 
 if (Qt6WebEngineWidgets_FOUND)
     target_link_libraries(LaTeXEditor PRIVATE Qt6::WebEngineWidgets)

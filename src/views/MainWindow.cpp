@@ -1,4 +1,5 @@
 #include "MainWindow.h"
+#include "FindReplaceDialog.h"
 #include <QVBoxLayout>
 #include <QFileDialog>
 #include <QTextStream>
@@ -6,6 +7,8 @@
 #include <QActionGroup>
 #include <QStatusBar>
 #include <QMessageBox>
+#include <QPrinter>
+#include <QPrintDialog>
 #include "../controllers/FileController.h"
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nullptr) {
@@ -13,8 +16,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
     qDebug() << "MainWindow constructor started";
 
     // Create editor
-    m_editor = new QPlainTextEdit(this);
-    qDebug() << "PlainTextEdit created";
+    m_editor = new CodeEditor(this);
+    qDebug() << "CodeEditor created";
 
     m_editor->document()->setDefaultTextOption(QTextOption(Qt::AlignLeft | Qt::AlignTop));
     m_editor->setLayoutDirection(Qt::LeftToRight);
@@ -42,6 +45,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
 
     // Initialize highlighter
     m_highlighter = new LaTeXHighlighter(m_editor->document());
+
+    // Initialize error checker
+    m_errorChecker = new LaTeXErrorChecker(this);
+    m_errorCheckTimer = new QTimer(this);
+    m_errorCheckTimer->setSingleShot(true);
+    m_errorCheckTimer->setInterval(1000); // 1 second delay
+    connect(m_errorCheckTimer, &QTimer::timeout, this, &MainWindow::checkForErrors);
+    connect(m_editor, &CodeEditor::textChanged, m_errorCheckTimer, qOverload<>(&QTimer::start));
 
     // Initialize FileController
     m_fileController = new FileController(m_documentModel, this, this);
@@ -97,17 +108,24 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
 
 
 MainWindow::~MainWindow() {
-    delete m_fileController;
-    delete m_documentModel;
+    // Qt's parent-child ownership handles cleanup automatically
+    // All objects created with 'this' as parent are deleted when MainWindow is destroyed
 }
 
 
-QPlainTextEdit* MainWindow::getEditor() const {
+CodeEditor* MainWindow::getEditor() const {
     return m_editor;
 }
 
 void MainWindow::createActions() {
     qDebug() << "createActions started";
+
+    // Initialize recent file actions
+    for (int i = 0; i < MaxRecentFiles; ++i) {
+        recentFileActs[i] = new QAction(this);
+        recentFileActs[i]->setVisible(false);
+        connect(recentFileActs[i], &QAction::triggered, this, &MainWindow::openRecentFile);
+    }
 
     newAct = new QAction(tr("&New"), this);
     newAct->setShortcuts(QKeySequence::New);
@@ -125,10 +143,36 @@ void MainWindow::createActions() {
     saveAct->setStatusTip(tr("Save the document to disk"));
     connect(saveAct, &QAction::triggered, [this]() { m_fileController->saveFile(); });
 
+    saveAsAct = new QAction(tr("Save &As..."), this);
+    saveAsAct->setShortcuts(QKeySequence::SaveAs);
+    saveAsAct->setStatusTip(tr("Save the document under a new name"));
+    connect(saveAsAct, &QAction::triggered, m_fileController, &FileController::saveFileAs);
+
+    exportPDFAct = new QAction(tr("Export to &PDF..."), this);
+    exportPDFAct->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_E));
+    exportPDFAct->setStatusTip(tr("Export document to PDF"));
+    connect(exportPDFAct, &QAction::triggered, this, &MainWindow::exportToPDF);
+
     exitAct = new QAction(tr("E&xit"), this);
     exitAct->setShortcuts(QKeySequence::Quit);
     exitAct->setStatusTip(tr("Exit the application"));
     connect(exitAct, &QAction::triggered, this, &QWidget::close);
+
+    findReplaceAct = new QAction(tr("&Find and Replace..."), this);
+    findReplaceAct->setShortcuts(QKeySequence::Find);
+    findReplaceAct->setStatusTip(tr("Find and replace text"));
+    connect(findReplaceAct, &QAction::triggered, this, &MainWindow::showFindReplaceDialog);
+
+    spellCheckAct = new QAction(tr("Enable &Spell Checking"), this);
+    spellCheckAct->setCheckable(true);
+    spellCheckAct->setChecked(false);
+    spellCheckAct->setStatusTip(tr("Enable or disable spell checking"));
+    connect(spellCheckAct, &QAction::toggled, this, &MainWindow::toggleSpellCheck);
+
+    showErrorsAct = new QAction(tr("Show &Errors"), this);
+    showErrorsAct->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_L));
+    showErrorsAct->setStatusTip(tr("Show LaTeX syntax errors"));
+    connect(showErrorsAct, &QAction::triggered, this, &MainWindow::showErrorPanel);
 
     rebuildPreviewAct = new QAction(tr("&Rebuild Preview"), this);
     rebuildPreviewAct->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_R));
@@ -182,10 +226,58 @@ void MainWindow::updateDocumentModelFromEditor() {
 void MainWindow::createMenus() {
     fileMenu = menuBar()->addMenu(tr("&File"));
     fileMenu->addAction(newAct);
+
+    // Add templates submenu
+    templatesMenu = fileMenu->addMenu(tr("New from Template"));
+    QAction *articleAct = new QAction(tr("Article"), this);
+    connect(articleAct, &QAction::triggered, [this]() {
+        m_editor->setPlainText(getTemplate("article"));
+        m_documentModel->setContent(m_editor->toPlainText());
+    });
+    templatesMenu->addAction(articleAct);
+
+    QAction *reportAct = new QAction(tr("Report"), this);
+    connect(reportAct, &QAction::triggered, [this]() {
+        m_editor->setPlainText(getTemplate("report"));
+        m_documentModel->setContent(m_editor->toPlainText());
+    });
+    templatesMenu->addAction(reportAct);
+
+    QAction *beamerAct = new QAction(tr("Beamer Presentation"), this);
+    connect(beamerAct, &QAction::triggered, [this]() {
+        m_editor->setPlainText(getTemplate("beamer"));
+        m_documentModel->setContent(m_editor->toPlainText());
+    });
+    templatesMenu->addAction(beamerAct);
+
+    QAction *letterAct = new QAction(tr("Letter"), this);
+    connect(letterAct, &QAction::triggered, [this]() {
+        m_editor->setPlainText(getTemplate("letter"));
+        m_documentModel->setContent(m_editor->toPlainText());
+    });
+    templatesMenu->addAction(letterAct);
+
     fileMenu->addAction(openAct);
+
+    // Add recent files submenu
+    recentFilesMenu = fileMenu->addMenu(tr("Recent Files"));
+    for (int i = 0; i < MaxRecentFiles; ++i) {
+        recentFilesMenu->addAction(recentFileActs[i]);
+    }
+    updateRecentFileActions();
+
+    fileMenu->addSeparator();
     fileMenu->addAction(saveAct);
+    fileMenu->addAction(saveAsAct);
+    fileMenu->addSeparator();
+    fileMenu->addAction(exportPDFAct);
     fileMenu->addSeparator();
     fileMenu->addAction(exitAct);
+
+    editMenu = menuBar()->addMenu(tr("&Edit"));
+    editMenu->addAction(findReplaceAct);
+    editMenu->addSeparator();
+    editMenu->addAction(spellCheckAct);
 
     viewMenu = menuBar()->addMenu(tr("&View"));
     for (QAction *action : themeActGroup->actions()) {
@@ -193,6 +285,7 @@ void MainWindow::createMenus() {
     }
     viewMenu->addSeparator();
     viewMenu->addAction(rebuildPreviewAct);
+    viewMenu->addAction(showErrorsAct);
 }
 
 void MainWindow::rebuildPreview() {
@@ -309,4 +402,281 @@ void MainWindow::updateTheme(const Theme &newTheme) {
     // Force an update of the UI
     update();
     qDebug() << "UI update forced";
+}
+
+void MainWindow::updateRecentFileActions() {
+    QStringList files = m_settings.value("recentFileList").toStringList();
+
+    int numRecentFiles = qMin(files.size(), MaxRecentFiles);
+
+    for (int i = 0; i < numRecentFiles; ++i) {
+        QString text = tr("&%1 %2").arg(i + 1).arg(QFileInfo(files[i]).fileName());
+        recentFileActs[i]->setText(text);
+        recentFileActs[i]->setData(files[i]);
+        recentFileActs[i]->setVisible(true);
+    }
+
+    for (int i = numRecentFiles; i < MaxRecentFiles; ++i) {
+        recentFileActs[i]->setVisible(false);
+    }
+
+    recentFilesMenu->setEnabled(numRecentFiles > 0);
+}
+
+void MainWindow::addToRecentFiles(const QString &fileName) {
+    QStringList files = m_settings.value("recentFileList").toStringList();
+    files.removeAll(fileName);
+    files.prepend(fileName);
+    while (files.size() > MaxRecentFiles) {
+        files.removeLast();
+    }
+
+    m_settings.setValue("recentFileList", files);
+    updateRecentFileActions();
+}
+
+void MainWindow::openRecentFile() {
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action) {
+        QString fileName = action->data().toString();
+        if (QFile::exists(fileName)) {
+            m_fileController->loadFile(fileName);
+        } else {
+            QMessageBox::warning(this, tr("File Not Found"),
+                               tr("The file %1 no longer exists.").arg(fileName));
+            // Remove from recent files list
+            QStringList files = m_settings.value("recentFileList").toStringList();
+            files.removeAll(fileName);
+            m_settings.setValue("recentFileList", files);
+            updateRecentFileActions();
+        }
+    }
+}
+
+void MainWindow::showFindReplaceDialog() {
+    FindReplaceDialog *dialog = new FindReplaceDialog(m_editor, this);
+    dialog->show();
+}
+
+void MainWindow::exportToPDF() {
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Export to PDF"), QString(),
+                                                    tr("PDF Files (*.pdf)"));
+    if (!fileName.isEmpty()) {
+        if (!fileName.endsWith(".pdf", Qt::CaseInsensitive)) {
+            fileName += ".pdf";
+        }
+
+        QPrinter printer(QPrinter::HighResolution);
+        printer.setOutputFormat(QPrinter::PdfFormat);
+        printer.setOutputFileName(fileName);
+        printer.setPageSize(QPageSize(QPageSize::A4));
+
+        m_editor->document()->print(&printer);
+
+        statusBar()->showMessage(tr("PDF exported successfully"), 3000);
+    }
+}
+
+void MainWindow::toggleSpellCheck(bool enabled) {
+    // Qt doesn't have built-in spell checking for QPlainTextEdit on all platforms
+    // This is a placeholder for future implementation with third-party libraries
+    // or platform-specific spell checkers
+
+    if (enabled) {
+        statusBar()->showMessage(tr("Spell checking enabled (basic implementation)"), 3000);
+        // Future: Integrate with Hunspell or platform spell checkers
+    } else {
+        statusBar()->showMessage(tr("Spell checking disabled"), 3000);
+    }
+
+    // Note: A full implementation would require:
+    // 1. Integration with Hunspell or similar library
+    // 2. Custom QSyntaxHighlighter to underline misspelled words
+    // 3. Context menu for suggestions
+}
+
+void MainWindow::newFromTemplate() {
+    // This is called from template menu items
+}
+
+void MainWindow::checkForErrors() {
+    QString content = m_editor->toPlainText();
+    QVector<LaTeXError> errors = m_errorChecker->checkDocument(content);
+    m_editor->setErrors(errors);
+
+    // Update status bar
+    if (errors.isEmpty()) {
+        statusBar()->showMessage(tr("No errors found"), 2000);
+    } else {
+        statusBar()->showMessage(tr("%1 error(s) found").arg(errors.size()), 5000);
+    }
+}
+
+void MainWindow::showErrorPanel() {
+    QVector<LaTeXError> errors = m_editor->getErrors();
+
+    if (errors.isEmpty()) {
+        QMessageBox::information(this, tr("LaTeX Errors"),
+                               tr("No syntax errors found in the document."));
+        return;
+    }
+
+    QString errorText = tr("Found %1 error(s):\n\n").arg(errors.size());
+
+    for (const LaTeXError &error : errors) {
+        QString errorType;
+        switch (error.type) {
+            case LaTeXError::UnmatchedBrace:
+                errorType = "Unmatched Brace";
+                break;
+            case LaTeXError::UnmatchedBracket:
+                errorType = "Unmatched Bracket";
+                break;
+            case LaTeXError::UnmatchedEnvironment:
+                errorType = "Unmatched Environment";
+                break;
+            case LaTeXError::UnmatchedMathDelimiter:
+                errorType = "Unmatched Math Delimiter";
+                break;
+            case LaTeXError::InvalidCommand:
+                errorType = "Invalid Command";
+                break;
+            case LaTeXError::MissingArgument:
+                errorType = "Missing Argument";
+                break;
+        }
+
+        errorText += QString("Line %1, Col %2: [%3] %4\n")
+                         .arg(error.line + 1)
+                         .arg(error.column + 1)
+                         .arg(errorType)
+                         .arg(error.message);
+    }
+
+    QMessageBox msgBox(this);
+    msgBox.setWindowTitle(tr("LaTeX Syntax Errors"));
+    msgBox.setText(errorText);
+    msgBox.setIcon(QMessageBox::Warning);
+    msgBox.exec();
+}
+
+QString MainWindow::getTemplate(const QString &templateName) {
+    if (templateName == "article") {
+        return R"(\documentclass[12pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+\title{Your Title Here}
+\author{Your Name}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Your abstract goes here.
+\end{abstract}
+
+\section{Introduction}
+Your introduction goes here.
+
+\section{Main Content}
+Your main content goes here.
+
+\section{Conclusion}
+Your conclusion goes here.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document})";
+    } else if (templateName == "report") {
+        return R"(\documentclass[12pt]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{graphicx}
+
+\title{Your Report Title}
+\author{Your Name}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+
+\chapter{Introduction}
+Your introduction goes here.
+
+\chapter{Main Content}
+Your main content goes here.
+
+\chapter{Conclusion}
+Your conclusion goes here.
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document})";
+    } else if (templateName == "beamer") {
+        return R"(\documentclass{beamer}
+\usetheme{Madrid}
+
+\title{Your Presentation Title}
+\author{Your Name}
+\date{\today}
+
+\begin{document}
+
+\frame{\titlepage}
+
+\begin{frame}
+\frametitle{Outline}
+\tableofcontents
+\end{frame}
+
+\section{Introduction}
+\begin{frame}
+\frametitle{Introduction}
+Your introduction slide content here.
+\end{frame}
+
+\section{Main Content}
+\begin{frame}
+\frametitle{Main Content}
+Your main content here.
+\end{frame}
+
+\section{Conclusion}
+\begin{frame}
+\frametitle{Conclusion}
+Your conclusion here.
+\end{frame}
+
+\end{document})";
+    } else if (templateName == "letter") {
+        return R"(\documentclass{letter}
+\usepackage[utf8]{inputenc}
+
+\signature{Your Name}
+\address{Your Address \\ City, State ZIP}
+
+\begin{document}
+
+\begin{letter}{Recipient Name \\ Recipient Address \\ City, State ZIP}
+
+\opening{Dear Sir or Madam,}
+
+Your letter content goes here.
+
+\closing{Sincerely,}
+
+\end{letter}
+
+\end{document})";
+    }
+    return "";
 }

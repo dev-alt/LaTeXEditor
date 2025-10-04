@@ -24,6 +24,8 @@ private:
 
     void createEnvironmentActions();
 
+    void createBibTeXActions();
+
     QAction *createAction(const QString &text, const QString &command, const QString &tooltip = "");
 
     QMenu *createMenu(const QString &title);

@@ -23,14 +23,16 @@ public slots:
 
     void saveFile();
 
+    void saveFileAs();
+
+    void loadFile(const QString &fileName);
+
 private:
     DocumentModel *m_model;
     MainWindow *m_view;
     QString m_currentFile;
 
     bool maybeSave();
-
-    void loadFile(const QString &fileName);
 
     bool saveFile(const QString &fileName);
 

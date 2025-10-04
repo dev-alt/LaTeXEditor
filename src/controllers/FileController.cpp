@@ -5,7 +5,6 @@
 #include <QTextStream>
 #include <QMessageBox>
 #include <QStatusBar>
-#include <QPlainTextEdit>
 
 FileController::FileController(DocumentModel *model, MainWindow *view, QObject *parent)
         : QObject(parent), m_model(model), m_view(view), m_currentFile("") {
@@ -32,12 +31,17 @@ void FileController::openFile() {
 
 void FileController::saveFile() {
     if (m_currentFile.isEmpty()) {
-        QString fileName = QFileDialog::getSaveFileName(m_view);
-        if (fileName.isEmpty())
-            return;
-        saveFile(fileName);
+        saveFileAs();
     } else {
         saveFile(m_currentFile);
+    }
+}
+
+void FileController::saveFileAs() {
+    QString fileName = QFileDialog::getSaveFileName(m_view, tr("Save As"), QString(),
+                                                    tr("LaTeX Files (*.tex);;All Files (*)"));
+    if (!fileName.isEmpty()) {
+        saveFile(fileName);
     }
 }
 
@@ -53,6 +57,7 @@ void FileController::loadFile(const QString &fileName) {
     QTextStream in(&file);
     m_model->setContent(in.readAll());
     setCurrentFile(fileName);
+    m_view->addToRecentFiles(fileName);
     m_view->statusBar()->showMessage(tr("File loaded"), 2000);
 }
 
@@ -68,6 +73,7 @@ bool FileController::saveFile(const QString &fileName) {
     QTextStream out(&file);
     out << m_model->getContent();
     setCurrentFile(fileName);
+    m_view->addToRecentFiles(fileName);
     m_view->statusBar()->showMessage(tr("File saved"), 2000);
     return true;
 }
@@ -84,7 +90,7 @@ void FileController::setCurrentFile(const QString &fileName) {
 }
 
 void FileController::updateEditor() {
-    if (QPlainTextEdit *editor = m_view->findChild<QPlainTextEdit *>()) {
+    if (auto *editor = m_view->getEditor()) {
         editor->setPlainText(m_model->getContent());
     }
 }

@@ -2,17 +2,20 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QPlainTextEdit>
 #include <QAction>
 #include <QMenu>
 #include <QMenuBar>
 #include <QActionGroup>
 #include "../utils/LaTeXHighlighter.h"
 #include "../utils/ThemeManager.h"
+#include "../utils/CodeEditor.h"
+#include "../utils/LaTeXErrorChecker.h"
 #include "LatexToolbar.h"
 #include "../controllers/LatexToolbarController.h"
 #include "PreviewWindow.h"
 #include "../controllers/PreviewController.h"
+#include <QSettings>
+#include <QTimer>
 
 class DocumentModel;
 class FileController;
@@ -23,7 +26,8 @@ Q_OBJECT
 public:
     explicit MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
-    QPlainTextEdit* getEditor() const;
+    CodeEditor* getEditor() const;
+    void addToRecentFiles(const QString &fileName);
 
 public slots:
     void updateTheme(const Theme &newTheme);
@@ -39,12 +43,21 @@ private slots:
     void removeRTLOverride();
     void debugTextDirection();
     void testTheme();
+    void openRecentFile();
+    void showFindReplaceDialog();
+    void exportToPDF();
+    void toggleSpellCheck(bool enabled);
+    void newFromTemplate();
+    void checkForErrors();
+    void showErrorPanel();
 
 private:
     void createActions();
     void createMenus();
+    void updateRecentFileActions();
+    QString getTemplate(const QString &templateName);
 
-    QPlainTextEdit *m_editor;
+    CodeEditor *m_editor;
     LaTeXHighlighter *m_highlighter;
     DocumentModel *m_documentModel;
     FileController *m_fileController;
@@ -52,17 +65,31 @@ private:
     LatexToolbarController *m_latexToolbarController;
     PreviewWindow *m_previewWindow;
     PreviewController *m_previewController;
+    LaTeXErrorChecker *m_errorChecker;
+    QTimer *m_errorCheckTimer;
 
     QMenu *fileMenu;
     QMenu *viewMenu;
+    QMenu *editMenu;
+    QMenu *recentFilesMenu;
+    QMenu *templatesMenu;
 
     QAction *newAct;
     QAction *openAct;
     QAction *saveAct;
+    QAction *saveAsAct;
+    QAction *exportPDFAct;
     QAction *exitAct;
+    QAction *findReplaceAct;
+    QAction *spellCheckAct;
+    QAction *showErrorsAct;
     QAction *rebuildPreviewAct;
 
     QActionGroup *themeActGroup;
+
+    static const int MaxRecentFiles = 10;
+    QAction *recentFileActs[MaxRecentFiles];
+    QSettings m_settings;
 };
 
 #endif // MAINWINDOW_H

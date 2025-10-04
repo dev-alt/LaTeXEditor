@@ -22,6 +22,14 @@ void LaTeXHighlighter::setupHighlightingRules()
     rule.pattern = QRegularExpression(R"(\\begin\{.*\}|\\end\{.*\})");
     highlightingRules.append(rule);
 
+    // BibTeX entry types (@article, @book, etc.)
+    rule.pattern = QRegularExpression(R"(@[a-zA-Z]+\{)");
+    highlightingRules.append(rule);
+
+    // BibTeX fields (author =, title =, etc.)
+    rule.pattern = QRegularExpression(R"(\b[a-zA-Z]+\s*=)");
+    highlightingRules.append(rule);
+
     // Brackets
     rule.pattern = QRegularExpression(R"([\{\}\[\]])");
     highlightingRules.append(rule);
@@ -36,16 +44,27 @@ void LaTeXHighlighter::setupHighlightingRules()
 
 void LaTeXHighlighter::updateTheme(const Theme &theme)
 {
-    if (highlightingRules.size() >= 4) {
+    if (highlightingRules.size() >= 6) {
+        // LaTeX commands
         highlightingRules[0].format.setForeground(theme.commandColor);
         highlightingRules[0].format.setFontWeight(QFont::Bold);
 
+        // LaTeX environments
         highlightingRules[1].format.setForeground(theme.environmentColor);
         highlightingRules[1].format.setFontWeight(QFont::Bold);
 
-        highlightingRules[2].format.setForeground(theme.bracketColor);
+        // BibTeX entry types
+        highlightingRules[2].format.setForeground(theme.commandColor);
+        highlightingRules[2].format.setFontWeight(QFont::Bold);
 
-        highlightingRules[3].format.setForeground(theme.commentColor);
+        // BibTeX fields
+        highlightingRules[3].format.setForeground(theme.environmentColor);
+
+        // Brackets
+        highlightingRules[4].format.setForeground(theme.bracketColor);
+
+        // Comments
+        highlightingRules[5].format.setForeground(theme.commentColor);
     }
 
     rehighlight();

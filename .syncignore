@@ -1,0 +1,45 @@
+# Files and directories to exclude from sync
+# This file is used by sync.sh
+
+# Version control
+.git/
+.gitignore
+
+# Build directories
+build/
+cmake-build-*/
+out/
+
+# IDE files
+.idea/
+.vscode/
+.qtcreator/
+.claude/
+*.user
+*.user.*
+*.autosave
+
+# Compiled files
+*.o
+*.a
+*.so
+*.dll
+*.dylib
+*.exe
+moc_*
+qrc_*
+ui_*
+Makefile
+Makefile.*
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.bak
+*.tmp
+
+# Qt temporary files
+*.qm
+*.pro.user
+*.qbs.user

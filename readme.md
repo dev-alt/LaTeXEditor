@@ -1,28 +1,49 @@
 # LaTeX Editor
 
-A modern, feature-rich LaTeX editor built with C++23 and Qt6.
+A modern, feature-rich LaTeX editor built with C++17 and Qt6.
 
 ## Description
 
-LaTeX Editor is a powerful, user-friendly desktop application designed to streamline the process of creating and editing LaTeX documents. Built with the latest C++23 standards and Qt6 framework, it offers a robust, efficient, and cross-platform solution for LaTeX enthusiasts, researchers, and professionals.
+LaTeX Editor is a powerful, user-friendly desktop application designed to streamline the process of creating and editing LaTeX documents. Built with C++17 and Qt6 framework, it offers a robust, efficient, and cross-platform solution for LaTeX enthusiasts, researchers, and professionals.
 
 ## Features
 
-- Intuitive user interface with customizable themes
-- Real-time preview of compiled LaTeX documents
-- Advanced syntax highlighting and auto-completion
-- Integrated LaTeX compiler with error reporting
-- Multi-file project support
-- Version control integration
-- Customizable shortcuts and macros
+### Core Editing
+- **Syntax Highlighting** - LaTeX commands, environments, BibTeX entries, and comments
+- **Line Numbers** - With current line highlighting and error indicators
+- **Syntax Error Detection** - Real-time detection of LaTeX errors (braces, environments, math delimiters)
+- **Find & Replace** - Full search functionality with case-sensitive and whole-word options
+- **LaTeX Toolbar** - Quick-insert buttons for common commands and structures
+
+### File Management
+- **Save & Save As** - Standard file operations with .tex file filtering
+- **Recent Files Menu** - Access up to 10 recently opened files
+- **Document Templates** - Pre-configured templates for Article, Report, Beamer presentations, and Letters
+
+### Preview & Export
+- **Auto-updating Preview** - Real-time preview with 500ms debounce
+- **PDF Export** - Direct export to PDF format
+- **Manual Rebuild** - Force preview refresh (Ctrl+R)
+
+### LaTeX & BibTeX Support
+- **BibTeX Syntax Highlighting** - Recognizes citation entries and fields
+- **BibTeX Templates** - Quick-insert for @article, @book, @inproceedings, @misc
+- **Citation Tools** - Easy insertion of \cite{} and bibliography sections
+
+### Customization
+- **Multiple Themes** - Choose from various color schemes
+- **Spell Checking** - Framework ready for Hunspell integration (placeholder)
+
+See [SHORTCUTS.md](SHORTCUTS.md) for complete keyboard shortcuts reference.
 
 ## Getting Started
 
 ### Prerequisites
 
-- C++23 compatible compiler (GCC 11+, Clang 14+, or MSVC 19.29+)
+- C++17 compatible compiler (GCC 7+, Clang 5+, or MSVC 19.14+)
 - Qt 6.2 or higher
-- CMake 3.22 or higher
+- CMake 3.16 or higher
+- (Optional) Qt6WebEngineWidgets for enhanced preview capabilities
 
 ### Building from Source
 
@@ -32,23 +53,26 @@ LaTeX Editor is a powerful, user-friendly desktop application designed to stream
    cd latex-editor
    ```
 
-2. Create a build directory:
+2. **Building on Windows:**
+   ```powershell
+   # Easy way - use the build script
+   .\build.ps1           # Build in Release mode
+   .\build.ps1 run       # Build and run
+
+   # See BUILD_WINDOWS.md for detailed instructions
    ```
+
+3. **If developing in WSL:** Sync to Windows first
+   ```bash
+   ./sync.sh             # Sync to Windows
+   # Then use build.ps1 in Windows PowerShell
+   ```
+
+4. **Or build directly (Linux/macOS):**
+   ```bash
    mkdir build && cd build
-   ```
-
-3. Configure with CMake:
-   ```
    cmake ..
-   ```
-
-4. Build the project:
-   ```
    cmake --build .
-   ```
-
-5. Run the application:
-   ```
    ./LaTeXEditor
    ```
 
