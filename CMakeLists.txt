@@ -64,6 +64,7 @@ set(SOURCE_FILES
         src/utils/LaTeXErrorChecker.cpp
         src/utils/SpellChecker.cpp
         src/utils/SpellCheckHighlighter.cpp
+        src/utils/LaTeXToHtmlConverter.cpp
         resources.qrc
 )
 

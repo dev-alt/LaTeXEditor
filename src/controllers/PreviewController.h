@@ -5,6 +5,7 @@
 #include <QTimer>
 #include "../models/DocumentModel.h"
 #include "../views/PreviewWindow.h"
+#include "../utils/LaTeXToHtmlConverter.h"
 
 class PreviewController : public QObject {
 Q_OBJECT
@@ -23,6 +24,7 @@ private:
     DocumentModel *m_model;
     PreviewWindow *m_view;
     QTimer *m_updateTimer;
+    LaTeXToHtmlConverter *m_converter;
 };
 
 #endif // PREVIEWCONTROLLER_H
