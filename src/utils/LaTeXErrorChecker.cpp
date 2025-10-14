@@ -1,8 +1,12 @@
 #include "LaTeXErrorChecker.h"
 #include <QRegularExpression>
 #include <QStack>
+#include <QDebug>
 
-LaTeXErrorChecker::LaTeXErrorChecker(QObject *parent) : QObject(parent) {}
+LaTeXErrorChecker::LaTeXErrorChecker(QObject *parent) : QObject(parent) {
+    initializeCommandDatabase();
+    initializePackageDatabase();
+}
 
 QVector<LaTeXError> LaTeXErrorChecker::checkDocument(const QString &content) {
     QVector<LaTeXError> errors;
@@ -15,6 +19,15 @@ QVector<LaTeXError> LaTeXErrorChecker::checkDocument(const QString &content) {
 
     // Check math delimiters
     errors.append(checkMathDelimiters(content));
+
+    // Check commands (semantic validation)
+    errors.append(checkCommands(content));
+
+    // Check packages
+    errors.append(checkPackages(content));
+
+    // Check common mistakes
+    errors.append(checkCommonMistakes(content));
 
     return errors;
 }
@@ -274,6 +287,227 @@ QVector<LaTeXError> LaTeXErrorChecker::checkMathDelimiters(const QString &conten
                 .arg(qAbs(bracketBalance)),
             ""
         ));
+    }
+
+    return errors;
+}
+
+void LaTeXErrorChecker::initializeCommandDatabase() {
+    // Math mode commands
+    m_mathCommands = {
+        "frac", "sqrt", "sum", "int", "prod", "lim",
+        "alpha", "beta", "gamma", "delta", "epsilon",
+        "theta", "lambda", "mu", "pi", "sigma", "omega",
+        "infty", "partial", "nabla", "forall", "exists",
+        "leq", "geq", "neq", "approx", "equiv",
+        "times", "cdot", "pm", "mp"
+    };
+
+    // Deprecated commands
+    m_deprecatedCommands = {
+        "bf", "it", "rm", "sf", "tt", "sc",
+        "over", "atop", "above", "choose"
+    };
+
+    // Package-specific commands
+    m_packageCommands = {
+        {"includegraphics", "graphicx"},
+        {"url", "url"},
+        {"href", "hyperref"},
+        {"cite", "natbib"},
+        {"citep", "natbib"},
+        {"citet", "natbib"},
+        {"textcolor", "xcolor"},
+        {"definecolor", "xcolor"},
+        {"listings", "listings"},
+        {"lstlisting", "listings"}
+    };
+}
+
+void LaTeXErrorChecker::initializePackageDatabase() {
+    // This is already partially done in m_packageCommands
+    // Could be extended with more detailed package information
+}
+
+QVector<LaTeXError> LaTeXErrorChecker::checkCommands(const QString &content) {
+    QVector<LaTeXError> errors;
+
+    QRegularExpression cmdRegex(R"(\\([a-zA-Z]+))");
+    QStringList lines = content.split('\n');
+
+    // Track if we have loaded packages
+    QSet<QString> loadedPackages;
+    QRegularExpression usepackageRegex(R"(\\usepackage(?:\[[^\]]*\])?\{([^}]+)\})");
+
+    // First pass: collect loaded packages
+    for (const QString &line : lines) {
+        QRegularExpressionMatchIterator it = usepackageRegex.globalMatch(line);
+        while (it.hasNext()) {
+            QRegularExpressionMatch match = it.next();
+            QString packages = match.captured(1);
+            for (const QString &pkg : packages.split(',')) {
+                loadedPackages.insert(pkg.trimmed());
+            }
+        }
+    }
+
+    // Second pass: check commands
+    for (int lineNum = 0; lineNum < lines.size(); ++lineNum) {
+        const QString &line = lines[lineNum];
+
+        QRegularExpressionMatchIterator it = cmdRegex.globalMatch(line);
+        while (it.hasNext()) {
+            QRegularExpressionMatch match = it.next();
+
+            if (isInComment(line, match.capturedStart())) {
+                continue;
+            }
+
+            QString cmdName = match.captured(1);
+
+            // Check if command requires a package
+            if (m_packageCommands.contains(cmdName)) {
+                QString requiredPackage = m_packageCommands[cmdName];
+                if (!loadedPackages.contains(requiredPackage)) {
+                    errors.append(LaTeXError(
+                        LaTeXError::MissingPackage,
+                        lineNum,
+                        match.capturedStart(),
+                        QString("Command \\%1 requires package '%2'").arg(cmdName, requiredPackage),
+                        match.captured(0)
+                    ));
+                }
+            }
+
+            // Check deprecated commands
+            if (m_deprecatedCommands.contains(cmdName)) {
+                QString replacement;
+                if (cmdName == "bf") replacement = "\\textbf{} or \\bfseries";
+                else if (cmdName == "it") replacement = "\\textit{} or \\itshape";
+                else if (cmdName == "rm") replacement = "\\textrm{} or \\rmfamily";
+                else if (cmdName == "tt") replacement = "\\texttt{} or \\ttfamily";
+                else if (cmdName == "sc") replacement = "\\textsc{} or \\scshape";
+                else if (cmdName == "sf") replacement = "\\textsf{} or \\sffamily";
+                else replacement = "(see LaTeX documentation)";
+
+                errors.append(LaTeXError(
+                    LaTeXError::DeprecatedCommand,
+                    lineNum,
+                    match.capturedStart(),
+                    QString("Deprecated command \\%1, use %2 instead").arg(cmdName, replacement),
+                    match.captured(0)
+                ));
+            }
+        }
+    }
+
+    return errors;
+}
+
+QVector<LaTeXError> LaTeXErrorChecker::checkPackages(const QString &content) {
+    QVector<LaTeXError> errors;
+
+    QStringList lines = content.split('\n');
+    bool foundBeginDocument = false;
+    int beginDocumentLine = -1;
+
+    for (int lineNum = 0; lineNum < lines.size(); ++lineNum) {
+        const QString &line = lines[lineNum];
+
+        if (line.contains(QRegularExpression(R"(\\begin\{document\})"))) {
+            foundBeginDocument = true;
+            beginDocumentLine = lineNum;
+        }
+
+        // Check for \usepackage after \begin{document}
+        if (foundBeginDocument && line.contains(QRegularExpression(R"(\\usepackage)"))) {
+            if (!isInComment(line, line.indexOf("\\usepackage"))) {
+                errors.append(LaTeXError(
+                    LaTeXError::UsePackageAfterBeginDocument,
+                    lineNum,
+                    line.indexOf("\\usepackage"),
+                    QString("\\usepackage must be used before \\begin{document} (line %1)").arg(beginDocumentLine + 1),
+                    line.trimmed()
+                ));
+            }
+        }
+    }
+
+    return errors;
+}
+
+QVector<LaTeXError> LaTeXErrorChecker::checkCommonMistakes(const QString &content) {
+    QVector<LaTeXError> errors;
+
+    QStringList lines = content.split('\n');
+
+    for (int lineNum = 0; lineNum < lines.size(); ++lineNum) {
+        const QString &line = lines[lineNum];
+
+        // Check for common spacing mistakes
+        if (line.contains(QRegularExpression(R"(\w\\\w)"))) {
+            // Missing space after backslash command
+            QRegularExpression pattern(R"(\w(\\[a-zA-Z]+)\w)");
+            QRegularExpressionMatchIterator it = pattern.globalMatch(line);
+            while (it.hasNext()) {
+                QRegularExpressionMatch match = it.next();
+                if (!isInComment(line, match.capturedStart())) {
+                    errors.append(LaTeXError(
+                        LaTeXError::InvalidCommand,
+                        lineNum,
+                        match.capturedStart(),
+                        QString("Missing space or {} after command %1").arg(match.captured(1)),
+                        match.captured(0)
+                    ));
+                }
+            }
+        }
+
+        // Check for double spaces (common typo)
+        if (line.contains("  ") && !isInComment(line, line.indexOf("  "))) {
+            int pos = line.indexOf("  ");
+            // Only warn if not in verbatim-like content
+            if (!line.contains("\\verb") && !line.trimmed().startsWith("%")) {
+                errors.append(LaTeXError(
+                    LaTeXError::InvalidCommand,
+                    lineNum,
+                    pos,
+                    "Multiple consecutive spaces (LaTeX ignores extra spaces, but this may be unintentional)",
+                    "  "
+                ));
+            }
+        }
+
+        // Check for missing $ in common math expressions
+        QRegularExpression mathPattern(R"(\b(?:x|y|z|n|i|j|k)\s*[=<>]\s*\d+\b)");
+        if (!line.contains('$') && mathPattern.match(line).hasMatch()) {
+            QRegularExpressionMatch match = mathPattern.match(line);
+            if (!isInComment(line, match.capturedStart())) {
+                errors.append(LaTeXError(
+                    LaTeXError::MathModeRequired,
+                    lineNum,
+                    match.capturedStart(),
+                    "Mathematical expression should be in math mode ($...$)",
+                    match.captured(0)
+                ));
+            }
+        }
+
+        // Check for \\ outside of tables/arrays
+        if (line.contains(R"(\\)") && !line.contains("\\begin{") && !line.contains("\\end{")) {
+            // Check if we're likely in a table environment
+            bool likelyInTable = line.contains("&");
+            if (!likelyInTable && !isInComment(line, line.indexOf(R"(\\)"))) {
+                int pos = line.indexOf(R"(\\)");
+                errors.append(LaTeXError(
+                    LaTeXError::InvalidCommand,
+                    lineNum,
+                    pos,
+                    "Use of \\\\ outside table/array environment (use \\par or blank line for paragraphs)",
+                    R"(\\)"
+                ));
+            }
+        }
     }
 
     return errors;

@@ -12,7 +12,14 @@ struct LaTeXError {
         UnmatchedEnvironment,
         UnmatchedMathDelimiter,
         InvalidCommand,
-        MissingArgument
+        MissingArgument,
+        UnknownCommand,
+        MissingPackage,
+        UsePackageAfterBeginDocument,
+        InvalidArgumentCount,
+        DeprecatedCommand,
+        MathModeRequired,
+        TextModeRequired
     };
 
     ErrorType type;
@@ -49,9 +56,30 @@ private:
     QVector<LaTeXError> checkBraces(const QString &content);
     QVector<LaTeXError> checkEnvironments(const QString &content);
     QVector<LaTeXError> checkMathDelimiters(const QString &content);
+    QVector<LaTeXError> checkCommands(const QString &content);
+    QVector<LaTeXError> checkPackages(const QString &content);
+    QVector<LaTeXError> checkCommonMistakes(const QString &content);
 
     bool isInComment(const QString &line, int position);
     void getLineColumn(const QString &content, int position, int &line, int &column);
+
+    // Command and package databases
+    struct CommandInfo {
+        QString name;
+        int requiredArgs;
+        int optionalArgs;
+        QString requiredPackage;
+        bool mathModeOnly;
+        bool textModeOnly;
+        QString deprecatedReplacement;
+    };
+
+    void initializeCommandDatabase();
+    void initializePackageDatabase();
+    QMap<QString, CommandInfo> m_commandDatabase;
+    QMap<QString, QString> m_packageCommands; // command -> package
+    QSet<QString> m_mathCommands;
+    QSet<QString> m_deprecatedCommands;
 };
 
 #endif // LATEXERRORCHECKER_H

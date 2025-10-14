@@ -645,6 +645,27 @@ void MainWindow::showErrorPanel() {
             case LaTeXError::MissingArgument:
                 errorType = "Missing Argument";
                 break;
+            case LaTeXError::UnknownCommand:
+                errorType = "Unknown Command";
+                break;
+            case LaTeXError::MissingPackage:
+                errorType = "Missing Package";
+                break;
+            case LaTeXError::UsePackageAfterBeginDocument:
+                errorType = "Package After \\begin{document}";
+                break;
+            case LaTeXError::InvalidArgumentCount:
+                errorType = "Invalid Argument Count";
+                break;
+            case LaTeXError::DeprecatedCommand:
+                errorType = "Deprecated Command";
+                break;
+            case LaTeXError::MathModeRequired:
+                errorType = "Math Mode Required";
+                break;
+            case LaTeXError::TextModeRequired:
+                errorType = "Text Mode Required";
+                break;
         }
 
         errorText += QString("Line %1, Col %2: [%3] %4\n")
