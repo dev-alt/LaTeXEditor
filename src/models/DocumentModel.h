@@ -19,12 +19,23 @@ public:
 
     QString generatePreview() const;
 
+    // File path management
+    QString getCurrentFilePath() const;
+    void setCurrentFilePath(const QString &filePath);
+
+    // Auto-save support
+    QString getAutoSaveFilePath() const;
+    bool hasAutoSaveFile() const;
+
 signals:
     void contentChanged();
 
 private:
     QString m_content;
     bool m_modified;
+    QString m_currentFilePath;
+
+    QString generateAutoSaveFilePath() const;
 };
 
 #endif // DOCUMENTMODEL_H

@@ -80,6 +80,7 @@ bool FileController::saveFile(const QString &fileName) {
 
 void FileController::setCurrentFile(const QString &fileName) {
     m_currentFile = fileName;
+    m_model->setCurrentFilePath(fileName);  // Update model's file path for auto-save
     m_model->setModified(false);
     m_view->setWindowModified(false);
 

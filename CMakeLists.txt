@@ -33,14 +33,17 @@ set(SOURCE_FILES
         src/main.cpp
         src/models/DocumentModel.cpp
         src/models/Theme.cpp
+        src/models/ProjectModel.cpp
         src/views/MainWindow.cpp
         src/views/LatexToolbar.cpp
         src/views/PreviewWindow.cpp
         src/views/FindReplaceDialog.cpp
+        src/views/ProjectTreeWidget.cpp
         src/controllers/EditorController.cpp
         src/controllers/FileController.cpp
         src/controllers/LatexToolbarController.cpp
         src/controllers/PreviewController.cpp
+        src/controllers/AutoSaveController.cpp
         src/utils/LaTeXHighlighter.cpp
         src/utils/ThemeManager.cpp
         src/utils/CodeEditor.cpp

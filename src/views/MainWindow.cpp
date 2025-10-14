@@ -30,14 +30,38 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
     // Connect editor's textChanged signal to update the DocumentModel
     connect(m_editor, &QPlainTextEdit::textChanged, this, &MainWindow::updateDocumentModelFromEditor);
 
+    // Initialize ProjectModel
+    m_projectModel = new ProjectModel(this);
+
+    // Initialize ProjectTreeWidget
+    m_projectTreeWidget = new ProjectTreeWidget(m_projectModel, this);
+    m_projectTreeWidget->setMinimumWidth(200);
+    m_projectTreeWidget->setMaximumWidth(400);
+    connect(m_projectTreeWidget, &ProjectTreeWidget::fileSelected,
+            this, &MainWindow::onProjectFileSelected);
+    connect(m_projectTreeWidget, &ProjectTreeWidget::fileDoubleClicked,
+            this, &MainWindow::onProjectFileDoubleClicked);
+
     // Initialize PreviewWindow
     m_previewWindow = new PreviewWindow(this);
 
-    // Create a horizontal layout to hold the editor and preview
+    // Create splitters for flexible layout
     QWidget *centralWidget = new QWidget(this);
     QHBoxLayout *mainLayout = new QHBoxLayout(centralWidget);
-    mainLayout->addWidget(m_editor);
-    mainLayout->addWidget(m_previewWindow);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+
+    // Main horizontal splitter: [Project Tree | Editor | Preview]
+    m_mainSplitter = new QSplitter(Qt::Horizontal, this);
+    m_mainSplitter->addWidget(m_projectTreeWidget);
+    m_mainSplitter->addWidget(m_editor);
+    m_mainSplitter->addWidget(m_previewWindow);
+
+    // Set initial sizes: 20% tree, 40% editor, 40% preview
+    m_mainSplitter->setStretchFactor(0, 1);
+    m_mainSplitter->setStretchFactor(1, 2);
+    m_mainSplitter->setStretchFactor(2, 2);
+
+    mainLayout->addWidget(m_mainSplitter);
     setCentralWidget(centralWidget);
 
     // Initialize PreviewController
@@ -56,6 +80,37 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
 
     // Initialize FileController
     m_fileController = new FileController(m_documentModel, this, this);
+
+    // Initialize AutoSaveController
+    m_autoSaveController = new AutoSaveController(m_documentModel, this);
+    connect(m_autoSaveController, &AutoSaveController::autoSaved, this, [this]() {
+        statusBar()->showMessage(tr("Auto-saved"), 2000);
+    });
+    connect(m_autoSaveController, &AutoSaveController::autoSaveFailed, this, [this](const QString &error) {
+        statusBar()->showMessage(tr("Auto-save failed: %1").arg(error), 5000);
+    });
+
+    // Check for auto-save recovery
+    if (m_autoSaveController->hasRecoverableAutoSave()) {
+        QMessageBox::StandardButton reply = QMessageBox::question(
+            this,
+            tr("Recover Auto-saved Document"),
+            tr("An auto-saved version of your document was found. Would you like to recover it?"),
+            QMessageBox::Yes | QMessageBox::No
+        );
+
+        if (reply == QMessageBox::Yes) {
+            QString content = m_autoSaveController->recoverAutoSave();
+            if (!content.isEmpty()) {
+                m_editor->setPlainText(content);
+                m_documentModel->setContent(content);
+                statusBar()->showMessage(tr("Document recovered from auto-save"), 5000);
+            }
+        } else {
+            m_autoSaveController->deleteAutoSaveFile();
+        }
+    }
+
     createActions();
     createMenus();
 
@@ -179,6 +234,17 @@ void MainWindow::createActions() {
     rebuildPreviewAct->setStatusTip(tr("Rebuild the LaTeX preview"));
     connect(rebuildPreviewAct, &QAction::triggered, this, &MainWindow::rebuildPreview);
 
+    toggleProjectTreeAct = new QAction(tr("Toggle &Project Tree"), this);
+    toggleProjectTreeAct->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_P));
+    toggleProjectTreeAct->setStatusTip(tr("Show or hide the project tree"));
+    toggleProjectTreeAct->setCheckable(true);
+    toggleProjectTreeAct->setChecked(true);
+    connect(toggleProjectTreeAct, &QAction::triggered, this, &MainWindow::toggleProjectTree);
+
+    setAsMainFileAct = new QAction(tr("Set as &Main File"), this);
+    setAsMainFileAct->setStatusTip(tr("Set the current file as the main project file"));
+    connect(setAsMainFileAct, &QAction::triggered, this, &MainWindow::setAsMainFile);
+
     themeActGroup = new QActionGroup(this);
     try {
         for (const QString &themeName : ThemeManager::getInstance().getThemeNames()) {
@@ -280,12 +346,18 @@ void MainWindow::createMenus() {
     editMenu->addAction(spellCheckAct);
 
     viewMenu = menuBar()->addMenu(tr("&View"));
+    viewMenu->addAction(toggleProjectTreeAct);
+    viewMenu->addSeparator();
     for (QAction *action : themeActGroup->actions()) {
         viewMenu->addAction(action);
     }
     viewMenu->addSeparator();
     viewMenu->addAction(rebuildPreviewAct);
     viewMenu->addAction(showErrorsAct);
+
+    // Add Project menu
+    QMenu *projectMenu = menuBar()->addMenu(tr("&Project"));
+    projectMenu->addAction(setAsMainFileAct);
 }
 
 void MainWindow::rebuildPreview() {
@@ -679,4 +751,40 @@ Your letter content goes here.
 \end{document})";
     }
     return "";
+}
+
+void MainWindow::onProjectFileSelected(const QString &filePath) {
+    qDebug() << "Project file selected:" << filePath;
+    // Could implement preview or highlight in the future
+}
+
+void MainWindow::onProjectFileDoubleClicked(const QString &filePath) {
+    qDebug() << "Project file double-clicked:" << filePath;
+
+    // Load the file into the editor
+    if (QFile::exists(filePath)) {
+        m_fileController->loadFile(filePath);
+    } else {
+        QMessageBox::warning(this, tr("File Not Found"),
+                           tr("The file %1 does not exist.").arg(filePath));
+    }
+}
+
+void MainWindow::toggleProjectTree() {
+    bool visible = m_projectTreeWidget->isVisible();
+    m_projectTreeWidget->setVisible(!visible);
+    toggleProjectTreeAct->setChecked(!visible);
+}
+
+void MainWindow::setAsMainFile() {
+    QString currentFile = m_documentModel->getCurrentFilePath();
+
+    if (currentFile.isEmpty()) {
+        QMessageBox::information(this, tr("No File"),
+                               tr("Please save the current file first before setting it as the main file."));
+        return;
+    }
+
+    m_projectModel->setMainFile(currentFile);
+    statusBar()->showMessage(tr("Set %1 as main project file").arg(QFileInfo(currentFile).fileName()), 3000);
 }

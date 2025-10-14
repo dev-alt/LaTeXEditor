@@ -2,6 +2,9 @@
 #include <QProcess>
 #include <QTemporaryFile>
 #include <QTextStream>
+#include <QFileInfo>
+#include <QDir>
+#include <QStandardPaths>
 
 DocumentModel::DocumentModel(QObject *parent) : QObject(parent), m_modified(false) {}
 
@@ -48,4 +51,35 @@ QString DocumentModel::generatePreview() const {
         }
     }
     return "<p>Error generating preview</p>";
+}
+
+QString DocumentModel::getCurrentFilePath() const {
+    return m_currentFilePath;
+}
+
+void DocumentModel::setCurrentFilePath(const QString &filePath) {
+    m_currentFilePath = filePath;
+}
+
+QString DocumentModel::generateAutoSaveFilePath() const {
+    if (m_currentFilePath.isEmpty()) {
+        // For untitled documents, save in temp directory
+        QString tempDir = QStandardPaths::writableLocation(QStandardPaths::TempLocation);
+        return QDir(tempDir).filePath("LaTeXEditor_untitled_autosave.tex");
+    } else {
+        // Save alongside the current file with .autosave extension
+        QFileInfo fileInfo(m_currentFilePath);
+        QString dir = fileInfo.absolutePath();
+        QString baseName = fileInfo.baseName();
+        QString extension = fileInfo.completeSuffix();
+        return QDir(dir).filePath(QString(".%1.%2.autosave").arg(baseName).arg(extension));
+    }
+}
+
+QString DocumentModel::getAutoSaveFilePath() const {
+    return generateAutoSaveFilePath();
+}
+
+bool DocumentModel::hasAutoSaveFile() const {
+    return QFileInfo::exists(generateAutoSaveFilePath());
 }

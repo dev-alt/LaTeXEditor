@@ -13,9 +13,13 @@
 #include "LatexToolbar.h"
 #include "../controllers/LatexToolbarController.h"
 #include "PreviewWindow.h"
+#include "ProjectTreeWidget.h"
 #include "../controllers/PreviewController.h"
+#include "../controllers/AutoSaveController.h"
+#include "../models/ProjectModel.h"
 #include <QSettings>
 #include <QTimer>
+#include <QSplitter>
 
 class DocumentModel;
 class FileController;
@@ -50,6 +54,10 @@ private slots:
     void newFromTemplate();
     void checkForErrors();
     void showErrorPanel();
+    void onProjectFileSelected(const QString &filePath);
+    void onProjectFileDoubleClicked(const QString &filePath);
+    void toggleProjectTree();
+    void setAsMainFile();
 
 private:
     void createActions();
@@ -65,8 +73,12 @@ private:
     LatexToolbarController *m_latexToolbarController;
     PreviewWindow *m_previewWindow;
     PreviewController *m_previewController;
+    AutoSaveController *m_autoSaveController;
+    ProjectModel *m_projectModel;
+    ProjectTreeWidget *m_projectTreeWidget;
     LaTeXErrorChecker *m_errorChecker;
     QTimer *m_errorCheckTimer;
+    QSplitter *m_mainSplitter;
 
     QMenu *fileMenu;
     QMenu *viewMenu;
@@ -84,6 +96,8 @@ private:
     QAction *spellCheckAct;
     QAction *showErrorsAct;
     QAction *rebuildPreviewAct;
+    QAction *toggleProjectTreeAct;
+    QAction *setAsMainFileAct;
 
     QActionGroup *themeActGroup;
 
