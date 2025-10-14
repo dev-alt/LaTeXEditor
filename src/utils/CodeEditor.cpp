@@ -1,8 +1,11 @@
 #include "CodeEditor.h"
+#include "SpellChecker.h"
 #include <QPainter>
 #include <QTextBlock>
+#include <QContextMenuEvent>
+#include <QTextCursor>
 
-CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent) {
+CodeEditor::CodeEditor(QWidget *parent) : QPlainTextEdit(parent), m_spellChecker(nullptr) {
     lineNumberArea = new LineNumberArea(this);
 
     connect(this, &CodeEditor::blockCountChanged, this, &CodeEditor::updateLineNumberAreaWidth);
@@ -105,6 +108,78 @@ void CodeEditor::clearErrors() {
     m_errors.clear();
     highlightErrors();
     lineNumberArea->update();
+}
+
+void CodeEditor::setSpellChecker(SpellChecker *spellChecker) {
+    m_spellChecker = spellChecker;
+}
+
+void CodeEditor::contextMenuEvent(QContextMenuEvent *event) {
+    QMenu *menu = createStandardContextMenu();
+
+    // Add spell checking suggestions if spell checker is available
+    if (m_spellChecker && m_spellChecker->isInitialized()) {
+        QString word = getWordUnderCursor();
+
+        if (!word.isEmpty() && !m_spellChecker->isCorrect(word)) {
+            // Get suggestions
+            QStringList suggestions = m_spellChecker->suggestions(word);
+
+            // Add separator before spelling suggestions
+            menu->insertSeparator(menu->actions().first());
+
+            // Add "Add to Dictionary" action
+            QAction *addToDictAction = new QAction(tr("Add '%1' to Dictionary").arg(word), menu);
+            connect(addToDictAction, &QAction::triggered, [this, word]() {
+                if (m_spellChecker) {
+                    m_spellChecker->addToPersonalDictionary(word);
+                }
+            });
+            menu->insertAction(menu->actions().first(), addToDictAction);
+
+            // Add "Ignore" action
+            QAction *ignoreAction = new QAction(tr("Ignore '%1'").arg(word), menu);
+            connect(ignoreAction, &QAction::triggered, [this, word]() {
+                if (m_spellChecker) {
+                    m_spellChecker->ignoreWord(word);
+                }
+            });
+            menu->insertAction(menu->actions().first(), ignoreAction);
+
+            menu->insertSeparator(menu->actions().first());
+
+            // Add suggestions (limit to 5)
+            int count = 0;
+            for (const QString &suggestion : suggestions) {
+                if (count >= 5) break;
+
+                QAction *suggestionAction = new QAction(suggestion, menu);
+                connect(suggestionAction, &QAction::triggered, [this, word, suggestion]() {
+                    // Replace the misspelled word with the suggestion
+                    QTextCursor cursor = textCursor();
+                    cursor.select(QTextCursor::WordUnderCursor);
+                    cursor.insertText(suggestion);
+                });
+                menu->insertAction(menu->actions().first(), suggestionAction);
+                count++;
+            }
+
+            if (suggestions.isEmpty()) {
+                QAction *noSuggestionsAction = new QAction(tr("(No suggestions)"), menu);
+                noSuggestionsAction->setEnabled(false);
+                menu->insertAction(menu->actions().first(), noSuggestionsAction);
+            }
+        }
+    }
+
+    menu->exec(event->globalPos());
+    delete menu;
+}
+
+QString CodeEditor::getWordUnderCursor() const {
+    QTextCursor cursor = textCursor();
+    cursor.select(QTextCursor::WordUnderCursor);
+    return cursor.selectedText();
 }
 
 void CodeEditor::lineNumberAreaPaintEvent(QPaintEvent *event) {

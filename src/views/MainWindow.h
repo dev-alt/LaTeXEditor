@@ -10,6 +10,8 @@
 #include "../utils/ThemeManager.h"
 #include "../utils/CodeEditor.h"
 #include "../utils/LaTeXErrorChecker.h"
+#include "../utils/SpellChecker.h"
+#include "../utils/SpellCheckHighlighter.h"
 #include "LatexToolbar.h"
 #include "../controllers/LatexToolbarController.h"
 #include "PreviewWindow.h"
@@ -76,6 +78,8 @@ private:
     AutoSaveController *m_autoSaveController;
     ProjectModel *m_projectModel;
     ProjectTreeWidget *m_projectTreeWidget;
+    SpellChecker *m_spellChecker;
+    SpellCheckHighlighter *m_spellCheckHighlighter;
     LaTeXErrorChecker *m_errorChecker;
     QTimer *m_errorCheckTimer;
     QSplitter *m_mainSplitter;

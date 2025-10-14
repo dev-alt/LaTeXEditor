@@ -27,6 +27,20 @@ else ()
     message(STATUS "Qt6WebEngineWidgets not found, falling back to QTextBrowser for preview")
 endif ()
 
+# Find Hunspell (optional)
+find_package(PkgConfig)
+if (PKG_CONFIG_FOUND)
+    pkg_check_modules(HUNSPELL hunspell)
+    if (HUNSPELL_FOUND)
+        add_definitions(-DHAVE_HUNSPELL)
+        message(STATUS "Hunspell found, enabling spell checking")
+    else ()
+        message(STATUS "Hunspell not found, spell checking will be disabled")
+    endif ()
+else ()
+    message(STATUS "PkgConfig not found, spell checking will be disabled")
+endif ()
+
 add_definitions(-DQT_MESSAGELOGCONTEXT)
 
 set(SOURCE_FILES
@@ -48,6 +62,8 @@ set(SOURCE_FILES
         src/utils/ThemeManager.cpp
         src/utils/CodeEditor.cpp
         src/utils/LaTeXErrorChecker.cpp
+        src/utils/SpellChecker.cpp
+        src/utils/SpellCheckHighlighter.cpp
         resources.qrc
 )
 
@@ -68,6 +84,11 @@ target_link_libraries(LaTeXEditor PRIVATE Qt6::Widgets Qt6::PrintSupport)
 
 if (Qt6WebEngineWidgets_FOUND)
     target_link_libraries(LaTeXEditor PRIVATE Qt6::WebEngineWidgets)
+endif ()
+
+if (HUNSPELL_FOUND)
+    target_include_directories(LaTeXEditor PRIVATE ${HUNSPELL_INCLUDE_DIRS})
+    target_link_libraries(LaTeXEditor PRIVATE ${HUNSPELL_LIBRARIES})
 endif ()
 
 if(APPLE)

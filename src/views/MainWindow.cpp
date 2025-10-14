@@ -70,6 +70,31 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
     // Initialize highlighter
     m_highlighter = new LaTeXHighlighter(m_editor->document());
 
+    // Initialize spell checker
+    m_spellChecker = new SpellChecker(this);
+    QString affixPath = SpellChecker::getDefaultAffixPath();
+    QString dictPath = SpellChecker::getDefaultDictionaryPath();
+
+    if (!affixPath.isEmpty() && !dictPath.isEmpty()) {
+        if (m_spellChecker->initialize(affixPath, dictPath)) {
+            qDebug() << "Spell checker initialized successfully";
+            // Load personal dictionary
+            m_spellChecker->loadPersonalDictionary(SpellChecker::getDefaultPersonalDictionaryPath());
+        } else {
+            qDebug() << "Failed to initialize spell checker";
+        }
+    } else {
+        qDebug() << "Hunspell dictionaries not found. Spell checking disabled.";
+        qDebug() << "Install en_US dictionary to enable spell checking";
+    }
+
+    // Initialize spell check highlighter (starts disabled)
+    m_spellCheckHighlighter = new SpellCheckHighlighter(m_spellChecker, m_editor->document());
+    m_spellCheckHighlighter->setEnabled(false);
+
+    // Set spell checker in editor for context menu
+    m_editor->setSpellChecker(m_spellChecker);
+
     // Initialize error checker
     m_errorChecker = new LaTeXErrorChecker(this);
     m_errorCheckTimer = new QTimer(this);
@@ -163,6 +188,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent), m_highlighter(nul
 
 
 MainWindow::~MainWindow() {
+    // Save personal dictionary before exit
+    if (m_spellChecker && m_spellChecker->isInitialized()) {
+        m_spellChecker->savePersonalDictionary(SpellChecker::getDefaultPersonalDictionaryPath());
+    }
+
     // Qt's parent-child ownership handles cleanup automatically
     // All objects created with 'this' as parent are deleted when MainWindow is destroyed
 }
@@ -550,21 +580,20 @@ void MainWindow::exportToPDF() {
 }
 
 void MainWindow::toggleSpellCheck(bool enabled) {
-    // Qt doesn't have built-in spell checking for QPlainTextEdit on all platforms
-    // This is a placeholder for future implementation with third-party libraries
-    // or platform-specific spell checkers
+    if (m_spellCheckHighlighter) {
+        m_spellCheckHighlighter->setEnabled(enabled);
 
-    if (enabled) {
-        statusBar()->showMessage(tr("Spell checking enabled (basic implementation)"), 3000);
-        // Future: Integrate with Hunspell or platform spell checkers
-    } else {
-        statusBar()->showMessage(tr("Spell checking disabled"), 3000);
+        if (enabled) {
+            if (m_spellChecker && m_spellChecker->isInitialized()) {
+                statusBar()->showMessage(tr("Spell checking enabled"), 3000);
+            } else {
+                statusBar()->showMessage(tr("Spell checking unavailable - dictionaries not found"), 5000);
+                spellCheckAct->setChecked(false);
+            }
+        } else {
+            statusBar()->showMessage(tr("Spell checking disabled"), 3000);
+        }
     }
-
-    // Note: A full implementation would require:
-    // 1. Integration with Hunspell or similar library
-    // 2. Custom QSyntaxHighlighter to underline misspelled words
-    // 3. Context menu for suggestions
 }
 
 void MainWindow::newFromTemplate() {

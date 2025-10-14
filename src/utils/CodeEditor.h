@@ -4,12 +4,14 @@
 #include <QPlainTextEdit>
 #include <QObject>
 #include <QVector>
+#include <QMenu>
 #include "../utils/LaTeXErrorChecker.h"
 
 class QPaintEvent;
 class QResizeEvent;
 class QSize;
 class QWidget;
+class SpellChecker;
 
 class LineNumberArea;
 
@@ -26,8 +28,11 @@ public:
     void clearErrors();
     QVector<LaTeXError> getErrors() const { return m_errors; }
 
+    void setSpellChecker(SpellChecker *spellChecker);
+
 protected:
     void resizeEvent(QResizeEvent *event) override;
+    void contextMenuEvent(QContextMenuEvent *event) override;
 
 private slots:
     void updateLineNumberAreaWidth(int newBlockCount);
@@ -38,6 +43,9 @@ private slots:
 private:
     QWidget *lineNumberArea;
     QVector<LaTeXError> m_errors;
+    SpellChecker *m_spellChecker;
+
+    QString getWordUnderCursor() const;
 };
 
 class LineNumberArea : public QWidget {
